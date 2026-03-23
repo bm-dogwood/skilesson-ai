@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 const NAV_ITEMS = [
@@ -45,7 +45,6 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
-
   {
     label: "Upload Lesson",
     href: "/instructor/upload",
@@ -110,12 +109,49 @@ export default function InstructorShell({
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { user, logout } = useAuth();
-  // Derive a readable page name for the breadcrumb
+
+  // Check if mobile view
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [mobileMenuOpen]);
+
   const pageName =
     NAV_ITEMS.find((i) => i.href === pathname)?.label ??
     BOTTOM_ITEMS.find((i) => i.href === pathname)?.label ??
     "Dashboard";
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <>
@@ -130,8 +166,8 @@ export default function InstructorShell({
           --slate:  #475569;
           --gold:   #f59e0b;
           --rose:   #f43f5e;
-          --sidebar-w: 240px;
-          --sidebar-cw: 68px;
+          --sidebar-w: 260px;
+          --sidebar-cw: 70px;
           --sidebar-bg: #080f1e;
           --sidebar-border: rgba(71,85,105,0.18);
           --item-hover: rgba(56,189,248,0.07);
@@ -145,6 +181,24 @@ export default function InstructorShell({
           min-height: 100vh;
           background: var(--navy);
           font-family: 'Sora', sans-serif;
+          position: relative;
+        }
+
+        /* Overlay for mobile */
+        .mobile-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 998;
+          animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
 
         /* ── SIDEBAR ── */
@@ -156,14 +210,38 @@ export default function InstructorShell({
           display: flex;
           flex-direction: column;
           flex-shrink: 0;
-          transition: width 0.25s cubic-bezier(0.4,0,0.2,1);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           position: sticky;
           top: 0;
           height: 100vh;
           overflow: hidden;
+          z-index: 999;
         }
 
-        .inst-sidebar.collapsed { width: var(--sidebar-cw); }
+        /* Mobile sidebar styles */
+        @media (max-width: 767px) {
+          .inst-sidebar {
+            position: fixed;
+            left: -100%;
+            top: 0;
+            transition: left 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+          }
+          
+          .inst-sidebar.mobile-open {
+            left: 0;
+          }
+        }
+
+        .inst-sidebar.collapsed { 
+          width: var(--sidebar-cw); 
+        }
+
+        @media (max-width: 767px) {
+          .inst-sidebar.collapsed {
+            width: var(--sidebar-w);
+          }
+        }
 
         .sidebar-logo {
           display: flex;
@@ -290,29 +368,92 @@ export default function InstructorShell({
         .user-role { font-size: 0.62rem; color: var(--slate); }
 
         /* ── MAIN ── */
-        .inst-main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: auto; }
-
-        .inst-topbar {
-          height: 68px; border-bottom: 1px solid rgba(71,85,105,0.15);
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 0 2rem;
-          background: rgba(8,15,30,0.6); backdrop-filter: blur(8px);
-          position: sticky; top: 0; z-index: 10; flex-shrink: 0;
+        .inst-main { 
+          flex: 1; 
+          display: flex; 
+          flex-direction: column; 
+          min-width: 0; 
+          overflow: auto; 
+          position: relative;
         }
 
-        .topbar-breadcrumb { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--slate); }
-        .topbar-breadcrumb span { color: var(--snow); font-weight: 500; }
+        .inst-topbar {
+          height: 68px; 
+          border-bottom: 1px solid rgba(71,85,105,0.15);
+          display: flex; 
+          align-items: center; 
+          justify-content: space-between;
+          padding: 0 1rem;
+          background: rgba(8,15,30,0.6); 
+          backdrop-filter: blur(8px);
+          position: sticky; 
+          top: 0; 
+          z-index: 10; 
+          flex-shrink: 0;
+        }
+
+        @media (min-width: 768px) {
+          .inst-topbar {
+            padding: 0 2rem;
+          }
+        }
+
+        .mobile-menu-btn {
+          display: none;
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: var(--snow);
+          padding: 0.5rem;
+          border-radius: 8px;
+          transition: background 0.15s;
+        }
+
+        .mobile-menu-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-width: 767px) {
+          .mobile-menu-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+        }
+
+        .topbar-breadcrumb { 
+          display: flex; 
+          align-items: center; 
+          gap: 0.5rem; 
+          font-size: 0.8rem; 
+          color: var(--slate);
+        }
+        
+        .topbar-breadcrumb span { 
+          color: var(--snow); 
+          font-weight: 500; 
+        }
 
         .topbar-badge {
-          display: flex; align-items: center; gap: 0.4rem;
-          background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2);
-          border-radius: 100px; padding: 0.3rem 0.8rem;
-          font-size: 0.7rem; font-weight: 500; color: var(--ice);
-          letter-spacing: 0.08em; text-transform: uppercase;
+          display: flex; 
+          align-items: center; 
+          gap: 0.4rem;
+          background: rgba(56,189,248,0.08); 
+          border: 1px solid rgba(56,189,248,0.2);
+          border-radius: 100px; 
+          padding: 0.3rem 0.8rem;
+          font-size: 0.7rem; 
+          font-weight: 500; 
+          color: var(--ice);
+          letter-spacing: 0.08em; 
+          text-transform: uppercase;
         }
 
         .topbar-dot {
-          width: 6px; height: 6px; border-radius: 50%; background: var(--ice);
+          width: 6px; 
+          height: 6px; 
+          border-radius: 50%; 
+          background: var(--ice);
           animation: pulse-dot 2s ease-in-out infinite;
         }
 
@@ -321,12 +462,33 @@ export default function InstructorShell({
           50%      { opacity:0.4; transform:scale(0.7); }
         }
 
-        .inst-content { flex: 1; padding: 2.5rem 2rem; }
+        .inst-content { 
+          flex: 1; 
+          padding: 1.5rem 1rem; 
+        }
+
+        @media (min-width: 768px) {
+          .inst-content { 
+            padding: 2.5rem 2rem; 
+          }
+        }
       `}</style>
 
       <div className="inst-shell">
+        {/* Mobile Overlay */}
+        {mobileMenuOpen && (
+          <div
+            className="mobile-overlay"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
-        <aside className={`inst-sidebar${collapsed ? " collapsed" : ""}`}>
+        <aside
+          className={`inst-sidebar${collapsed ? " collapsed" : ""}${
+            mobileMenuOpen ? " mobile-open" : ""
+          }`}
+        >
           <div className="sidebar-logo">
             <div className="logo-gem">
               <svg viewBox="0 0 24 24">
@@ -367,14 +529,9 @@ export default function InstructorShell({
               </Link>
             ))}
 
-            <button
-              onClick={() => {
-                logout();
-              }}
-              className="collapse-btn"
-            >
+            <button onClick={handleLogout} className="collapse-btn">
               <LogOut className="w-4 h-4" />
-              Sign Out
+              <span className="nav-label">Sign Out</span>
             </button>
 
             <button
@@ -400,8 +557,16 @@ export default function InstructorShell({
         {/* Main area */}
         <div className="inst-main">
           <header className="inst-topbar">
-            <div className="topbar-breadcrumb">
-              Instructor Portal &rsaquo; <span>{pageName}</span>
+            <div className="flex items-center gap-2">
+              <button
+                className="mobile-menu-btn"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+              <div className="topbar-breadcrumb">
+                Instructor Portal &rsaquo; <span>{pageName}</span>
+              </div>
             </div>
             <div className="topbar-badge">
               <span className="topbar-dot" />

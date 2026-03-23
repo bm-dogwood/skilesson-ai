@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   BookOpen,
@@ -15,16 +15,16 @@ import {
   ChevronLeft,
   ChevronRight,
   Mountain,
-} from 'lucide-react';
-import { useAuth } from '@/lib/auth-context';
+} from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/lessons', label: 'My Lessons', icon: BookOpen },
-  { href: '/dashboard/progress', label: 'Progress', icon: TrendingUp },
-  { href: '/dashboard/coach', label: 'AI Coach', icon: Bot },
-  { href: '/dashboard/community', label: 'Community', icon: Users },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/lessons", label: "My Lessons", icon: BookOpen },
+  { href: "/dashboard/progress", label: "Progress", icon: TrendingUp },
+  { href: "/dashboard/coach", label: "AI Coach", icon: Bot },
+  { href: "/dashboard/community", label: "Community", icon: Users },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 export default function DashboardSidebar() {
@@ -32,11 +32,18 @@ export default function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { user, logout } = useAuth();
 
-  const initial = user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'AT';
-  const displayName = user?.name || 'Alex Thompson';
+  const initial = user?.name
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "AT";
+  const displayName = user?.name || "Alex Thompson";
 
   const isActive = (href: string) => {
-    if (href === '/dashboard') return pathname === '/dashboard';
+    if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
   };
 
@@ -46,7 +53,7 @@ export default function DashboardSidebar() {
       <motion.aside
         initial={false}
         animate={{ width: collapsed ? 80 : 260 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
         className="hidden md:flex flex-col fixed left-0 top-0 h-screen bg-[#0f172a] border-r border-white/[0.06] z-40"
       >
         {/* Logo */}
@@ -58,7 +65,7 @@ export default function DashboardSidebar() {
             {!collapsed && (
               <motion.span
                 initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
+                animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.2 }}
                 className="font-heading font-bold text-snow text-lg whitespace-nowrap overflow-hidden"
@@ -80,15 +87,19 @@ export default function DashboardSidebar() {
                   whileTap={{ scale: 0.97 }}
                   className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors cursor-pointer group ${
                     active
-                      ? 'bg-ice/10 text-ice'
-                      : 'text-slate-400 hover:text-snow hover:bg-white/[0.04]'
+                      ? "bg-ice/10 text-ice"
+                      : "text-slate-400 hover:text-snow hover:bg-white/[0.04]"
                   }`}
                 >
                   {active && (
                     <motion.div
                       layoutId="sidebar-active"
                       className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-ice rounded-r-full"
-                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 30,
+                      }}
                     />
                   )}
                   <item.icon className="w-5 h-5 shrink-0" />
@@ -96,7 +107,7 @@ export default function DashboardSidebar() {
                     {!collapsed && (
                       <motion.span
                         initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: 'auto' }}
+                        animate={{ opacity: 1, width: "auto" }}
                         exit={{ opacity: 0, width: 0 }}
                         transition={{ duration: 0.2 }}
                         className="text-sm font-medium whitespace-nowrap overflow-hidden"
@@ -137,12 +148,14 @@ export default function DashboardSidebar() {
               {!collapsed && (
                 <motion.div
                   initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
+                  animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={{ duration: 0.2 }}
                   className="flex-1 min-w-0 overflow-hidden"
                 >
-                  <p className="text-sm font-medium text-snow truncate">{displayName}</p>
+                  <p className="text-sm font-medium text-snow truncate">
+                    {displayName}
+                  </p>
                   <button
                     onClick={logout}
                     className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-400 transition-colors mt-0.5 cursor-pointer"
@@ -167,7 +180,7 @@ export default function DashboardSidebar() {
                 <motion.div
                   whileTap={{ scale: 0.9 }}
                   className={`flex flex-col items-center gap-1 py-1 ${
-                    active ? 'text-ice' : 'text-slate-500'
+                    active ? "text-ice" : "text-slate-500"
                   }`}
                 >
                   <div className="relative">
@@ -176,7 +189,11 @@ export default function DashboardSidebar() {
                       <motion.div
                         layoutId="mobile-tab-active"
                         className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-ice"
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 30,
+                        }}
                       />
                     )}
                   </div>

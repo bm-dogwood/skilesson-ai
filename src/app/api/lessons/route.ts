@@ -33,6 +33,7 @@ export async function POST(req: Request) {
       level,
       sport,
       userId,
+      packageId,
     },
   });
 
