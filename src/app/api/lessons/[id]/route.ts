@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
 import { NextResponse, NextRequest } from "next/server";
 
 // ✅ GET SINGLE LESSON
@@ -7,12 +8,26 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const session = await getServerSession();
 
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
   const lesson = await prisma.lesson.findUnique({
     where: { id },
     include: {
-      user: true,
-      progress: true,
+      progress: {
+        where: {
+          userId: user.id, // ✅ faster + cleaner
+        },
+      },
     },
   });
 

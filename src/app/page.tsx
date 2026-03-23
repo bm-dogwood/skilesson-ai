@@ -86,23 +86,26 @@ function MountainBackground() {
     <div className="absolute inset-0 overflow-hidden">
       {/* Real mountain background image */}
       {/* YouTube video background */}
-      <iframe
-        src="https://www.youtube.com/embed/k12GHIJB92c?autoplay=1&mute=1&loop=1&playlist=k12GHIJB92c&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1"
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        style={{
-          transform: "scale(1.5)",
-          top: "50%",
-          left: "50%",
-          translate: "-50% -50%",
-          position: "absolute",
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-        }}
-        allow="autoplay; encrypted-media"
-        allowFullScreen
-        title="Mountain background video"
-      />
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      >
+        <source src="/ski.mp4" type="video/mp4" />
+      </video>
+      <div className="block md:hidden">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src="/skii.mp4" type="video/mp4" />
+        </video>
+      </div>
       {/* Sky gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0c1425]/80 via-[#0f1d35]/70 to-[#0f172a]" />
 

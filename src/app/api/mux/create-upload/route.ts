@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const { title, description, level, sport } = await req.json();
+    const { title, description, level, sport, packageId } = await req.json();
 
     // 🎬 Create upload on Mux
     const upload = await mux.video.uploads.create({
@@ -42,18 +42,22 @@ export async function POST(req: Request) {
         description,
         level,
         sport,
+        packageId,
         uploadId: upload.id,
         userId: user.id,
         duration: 0,
       },
     });
-
+    const lessonId = crypto.randomUUID();
     return NextResponse.json({
       uploadUrl: upload.url,
-      lessonId: lesson.id,
+      lessonId,
     });
-  } catch (error) {
-    console.error("❌ ERROR:", error);
-    return NextResponse.json({ error: "Failed" }, { status: 500 });
+  } catch (err) {
+    console.error("MUX CREATE UPLOAD ERROR:", err);
+    return NextResponse.json(
+      { error: "Failed to create upload" },
+      { status: 500 }
+    );
   }
 }

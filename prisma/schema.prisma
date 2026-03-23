@@ -37,6 +37,9 @@ model Lesson {
   videoUrl    String?
   uploadId     String?  @unique
 
+  packageId   String?
+  package     Package? @relation(fields: [packageId], references: [id])
+
   playbackId   String?
   assetId      String?
   thumbnailUrl String?
@@ -112,4 +115,5 @@ model Package {
   updatedAt     DateTime @updatedAt
 
   subscriptions Subscription[]
+  lessons Lesson[]
 }

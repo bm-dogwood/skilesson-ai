@@ -28,6 +28,16 @@ const LEVEL_META: Record<
   },
 };
 
+type Sport = "Skiing" | "Snowboarding";
+type Package = "Explorer" | "Summit" | "Apex";
+
+// Package ID mapping (should match your database)
+const PACKAGE_IDS: Record<Package, string> = {
+  Apex: "1cd10266-0b17-4517-94f4-13bd633fa954",
+  Explorer: "735b4dc1-2cb0-4d37-9bf8-3c861c4e1a99",
+  Summit: "78772328-0048-4318-814e-3df7ec84054f",
+};
+
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -38,11 +48,12 @@ export default function UploadPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [level, setLevel] = useState<Level>("Beginner");
-  type Sport = "Skiing" | "Snowboarding";
-
   const [sport, setSport] = useState<Sport>("Skiing");
-
+  const [pkg, setPkg] = useState<Package>("Explorer");
   const [lessons, setLessons] = useState<any[]>([]);
+  const [uploadInterval, setUploadInterval] = useState<NodeJS.Timeout | null>(
+    null
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,7 +66,11 @@ export default function UploadPage() {
   };
 
   const handleFile = (f: File | null) => {
-    if (f && f.type.startsWith("video/")) setFile(f);
+    if (f && f.type.startsWith("video/")) {
+      setFile(f);
+      setStatus("idle");
+      setProgress(0);
+    }
   };
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -64,54 +79,116 @@ export default function UploadPage() {
     handleFile(e.dataTransfer.files?.[0] ?? null);
   }, []);
 
+  const uploadToMux = async (uploadUrl: string, file: File) => {
+    // Use XMLHttpRequest for better progress tracking
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setProgress(percent);
+        }
+      });
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status === 200 || xhr.status === 201) {
+          resolve(xhr.response);
+        } else {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      });
+
+      xhr.addEventListener("error", () => {
+        reject(new Error("Network error during upload"));
+      });
+
+      xhr.open("PUT", uploadUrl);
+      xhr.setRequestHeader("Content-Type", file.type);
+      xhr.send(file);
+    });
+  };
+
   const handleUpload = async () => {
-    if (!file || !title.trim()) return;
+    if (!file || !title.trim()) {
+      alert("Please provide both a title and a video file.");
+      return;
+    }
+
     try {
       setStatus("url");
       setProgress(0);
 
+      // Step 1: Create upload in backend and get Mux upload URL
       const res = await fetch("/api/mux/create-upload", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           title,
           description,
           level,
           sport,
+          packageId: PACKAGE_IDS[pkg],
         }),
       });
+
+      if (!res.ok) {
+        throw new Error(`Failed to create upload: ${res.status}`);
+      }
+
       const { uploadUrl, lessonId } = await res.json();
 
-      // 🚀 optimistic lesson
+      // Add optimistic lesson
       const newLesson = {
         id: lessonId,
         title,
         description,
         level,
         sport,
-
-        status: "processing",
+        package: pkg,
+        status: "uploading",
       };
-
       setLessons((prev) => [newLesson, ...prev]);
 
-      // Simulate progress (real XHR progress event can replace this)
-      const interval = setInterval(() => {
-        setProgress((p) => {
-          if (p >= 90) {
-            clearInterval(interval);
-            return p;
-          }
-          return p + Math.floor(Math.random() * 8) + 3;
-        });
-      }, 300);
+      // Step 2: Upload video directly to Mux
+      setStatus("uploading");
+      await uploadToMux(uploadUrl, file);
 
-      await fetch(uploadUrl, { method: "PUT", body: file });
-
-      clearInterval(interval);
-      setProgress(100);
+      // Step 3: Upload complete - update lesson status
       setStatus("done");
-    } catch {
+      setProgress(100);
+
+      // Update the lesson status in the UI
+      setLessons((prev) =>
+        prev.map((lesson) =>
+          lesson.id === lessonId ? { ...lesson, status: "processing" } : lesson
+        )
+      );
+
+      // Reset form after successful upload
+      setFile(null);
+      setTitle("");
+      setDescription("");
+
+      // Clear progress after a delay
+      setTimeout(() => {
+        if (status === "done") {
+          setStatus("idle");
+          setProgress(0);
+        }
+      }, 3000);
+    } catch (error) {
+      console.error("Upload error:", error);
       setStatus("error");
+
+      // Remove the failed optimistic lesson
+      setLessons((prev) => prev.slice(1));
+
+      setTimeout(() => {
+        setStatus("idle");
+      }, 5000);
     }
   };
 
@@ -120,8 +197,39 @@ export default function UploadPage() {
     return `${(b / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const lm = LEVEL_META[level];
-  const canUpload = !!file && !!title.trim() && status !== "uploading";
+  const canUpload =
+    !!file && !!title.trim() && status !== "uploading" && status !== "url";
+
+  const getStatusIcon = () => {
+    if (status === "done") {
+      return (
+        <svg viewBox="0 0 24 24" style={{ width: 15, height: 15 }}>
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      );
+    }
+    if (status === "error") {
+      return (
+        <svg viewBox="0 0 24 24" style={{ width: 15, height: 15 }}>
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      );
+    }
+    if (status === "uploading" || status === "url") {
+      return (
+        <span
+          className="spinner"
+          style={{
+            borderColor: "rgba(56,189,248,0.25)",
+            borderTopColor: "var(--ice)",
+          }}
+        />
+      );
+    }
+    return null;
+  };
 
   return (
     <>
@@ -434,30 +542,34 @@ export default function UploadPage() {
             Add a new video lesson for your students to access and learn from.
           </p>
         </div>
-        <div style={{ marginBottom: "2rem" }}>
-          {lessons.map((l) => (
-            <div
-              key={l.id}
-              style={{
-                padding: "1rem",
-                border: "1px solid rgba(71,85,105,0.3)",
-                borderRadius: "10px",
-                marginBottom: "0.75rem",
-              }}
-            >
-              <div style={{ fontWeight: 600 }}>{l.title}</div>
-              <div style={{ fontSize: "0.8rem", color: "#94a3b8" }}>
-                {l.sport} • {l.level}
-              </div>
 
-              <div style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
-                {l.status === "processing"
-                  ? "⏳ Processing video..."
-                  : "✅ Ready"}
+        {/* Recent Lessons Display */}
+        {lessons.length > 0 && (
+          <div style={{ marginBottom: "2rem" }}>
+            {lessons.map((l) => (
+              <div
+                key={l.id}
+                style={{
+                  padding: "1rem",
+                  border: "1px solid rgba(71,85,105,0.3)",
+                  borderRadius: "10px",
+                  marginBottom: "0.75rem",
+                }}
+              >
+                <div style={{ fontWeight: 600 }}>{l.title}</div>
+                <div style={{ fontSize: "0.8rem", color: "#94a3b8" }}>
+                  {l.sport} • {l.level} • {l.package}
+                </div>
+                <div style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
+                  {l.status === "uploading" && "⏳ Uploading video..."}
+                  {l.status === "processing" && "⏳ Processing video..."}
+                  {l.status === "done" && "✅ Ready"}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
+
         <div className="up-grid">
           {/* ── Left: main form ── */}
           <div
@@ -489,6 +601,7 @@ export default function UploadPage() {
                     placeholder="e.g. Mastering the Parallel Turn"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
+                    disabled={status === "uploading" || status === "url"}
                   />
                 </div>
 
@@ -499,20 +612,21 @@ export default function UploadPage() {
                     placeholder="Briefly describe what students will learn in this lesson…"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
+                    disabled={status === "uploading" || status === "url"}
                   />
                 </div>
+
                 <div>
                   <label className="field-label">Sport *</label>
-
                   <div className="level-grid">
                     {(["Skiing", "Snowboarding"] as Sport[]).map((s) => {
                       const active = sport === s;
-
                       return (
                         <button
                           key={s}
                           className="level-btn"
                           onClick={() => setSport(s)}
+                          disabled={status === "uploading" || status === "url"}
                           style={
                             active
                               ? {
@@ -533,6 +647,7 @@ export default function UploadPage() {
                     })}
                   </div>
                 </div>
+
                 <div>
                   <label className="field-label">Skill Level</label>
                   <div className="level-grid">
@@ -545,6 +660,9 @@ export default function UploadPage() {
                             key={l}
                             className="level-btn"
                             onClick={() => setLevel(l)}
+                            disabled={
+                              status === "uploading" || status === "url"
+                            }
                             style={
                               active
                                 ? { borderColor: m.border, background: m.bg }
@@ -566,6 +684,38 @@ export default function UploadPage() {
                         );
                       }
                     )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="field-label">Package *</label>
+                  <div className="level-grid">
+                    {(["Explorer", "Summit", "Apex"] as Package[]).map((p) => {
+                      const active = pkg === p;
+                      return (
+                        <button
+                          key={p}
+                          className="level-btn"
+                          onClick={() => setPkg(p)}
+                          disabled={status === "uploading" || status === "url"}
+                          style={
+                            active
+                              ? {
+                                  borderColor: "var(--ice)",
+                                  background: "rgba(56,189,248,0.08)",
+                                }
+                              : {}
+                          }
+                        >
+                          <div
+                            className="level-name"
+                            style={active ? { color: "var(--ice)" } : {}}
+                          >
+                            {p}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -595,6 +745,7 @@ export default function UploadPage() {
                   accept="video/*"
                   style={{ display: "none" }}
                   onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+                  disabled={status === "uploading" || status === "url"}
                 />
 
                 {!file ? (
@@ -637,7 +788,7 @@ export default function UploadPage() {
                     <div className="file-info">
                       <div className="file-name">{file.name}</div>
                       <div className="file-size">{formatBytes(file.size)}</div>
-                      {status === "uploading" && (
+                      {(status === "uploading" || status === "url") && (
                         <div
                           className="progress-wrap"
                           style={{ marginTop: "0.5rem" }}
@@ -655,6 +806,7 @@ export default function UploadPage() {
                         setFile(null);
                         setStatus("idle");
                       }}
+                      disabled={status === "uploading" || status === "url"}
                     >
                       ×
                     </button>
@@ -663,27 +815,7 @@ export default function UploadPage() {
 
                 {status !== "idle" && (
                   <div className={`status-banner ${status}`}>
-                    {status === "done" && (
-                      <svg viewBox="0 0 24 24">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                    {status === "error" && (
-                      <svg viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="12" />
-                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                      </svg>
-                    )}
-                    {(status === "uploading" || status === "url") && (
-                      <span
-                        className="spinner"
-                        style={{
-                          borderColor: "rgba(56,189,248,0.25)",
-                          borderTopColor: "var(--ice)",
-                        }}
-                      />
-                    )}
+                    {getStatusIcon()}
                     {statusMessages[status]}
                   </div>
                 )}
