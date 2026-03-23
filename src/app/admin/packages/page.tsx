@@ -89,28 +89,17 @@ export default function AdminPackagesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[400px] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+      <div className="min-h-[400px] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
-          <p className="mt-4 text-gray-400 font-medium">Loading packages...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading packages...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* Animated Background Pattern */}
-      <div className="fixed inset-0 opacity-5 pointer-events-none">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(139, 92, 246, 0.15) 1px, transparent 1px)`,
-            backgroundSize: "40px 40px",
-          }}
-        />
-      </div>
-
+    <div className="w-full bg-gray-50">
       {/* Main Content Container */}
       <div className="relative w-full px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         {/* Header Section */}
@@ -118,26 +107,25 @@ export default function AdminPackagesPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg">
-                  <SparklesIcon className="h-6 w-6 text-white" />
+                <div className="p-2 bg-gray-900 rounded-xl">
+                  <SparklesIcon className="h-6 w-6 text-gray-400" />
                 </div>
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                     Package Manager
                   </h1>
-                  <p className="text-gray-400 text-sm mt-1">
-                    Manage your subscription plans with precision
+                  <p className="text-gray-500 text-sm mt-1">
+                    Manage your subscription plans
                   </p>
                 </div>
               </div>
             </div>
             <button
               onClick={openAdd}
-              className="group relative inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 overflow-hidden w-full sm:w-auto justify-center"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-xl transition-all duration-200 w-full sm:w-auto justify-center"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <PlusIcon className="h-5 w-5 relative z-10" />
-              <span className="relative z-10">Add Package</span>
+              <PlusIcon className="h-5 w-5" />
+              <span>Add Package</span>
             </button>
           </div>
         </div>
@@ -149,15 +137,11 @@ export default function AdminPackagesPage() {
               label: "Total Packages",
               value: packages.length,
               icon: CubeIcon,
-              gradient: "from-blue-500 to-cyan-500",
-              bgGradient: "from-blue-500/20 to-cyan-500/20",
             },
             {
               label: "Active Plans",
               value: packages.filter((p) => p.isActive).length,
               icon: CheckIcon,
-              gradient: "from-green-500 to-emerald-500",
-              bgGradient: "from-green-500/20 to-emerald-500/20",
             },
             {
               label: "Avg Monthly Price",
@@ -166,38 +150,29 @@ export default function AdminPackagesPage() {
                   packages.length || 0
               ).toFixed(0)}`,
               icon: CurrencyDollarIcon,
-              gradient: "from-purple-500 to-pink-500",
-              bgGradient: "from-purple-500/20 to-pink-500/20",
             },
             {
               label: "Unique Tiers",
               value: new Set(packages.map((p) => p.tier)).size,
               icon: TagIcon,
-              gradient: "from-orange-500 to-red-500",
-              bgGradient: "from-orange-500/20 to-red-500/20",
             },
           ].map((stat, idx) => (
             <div
               key={idx}
-              className="group relative bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10"
+              className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 shadow-sm"
             >
-              <div
-                className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-              />
-              <div className="relative p-4 md:p-6">
+              <div className="p-4 md:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400 text-xs md:text-sm font-medium">
+                    <p className="text-gray-500 text-xs md:text-sm font-medium">
                       {stat.label}
                     </p>
-                    <p className="text-2xl md:text-3xl font-bold text-white mt-2">
+                    <p className="text-2xl md:text-3xl font-bold text-gray-900 mt-2">
                       {stat.value}
                     </p>
                   </div>
-                  <div
-                    className={`bg-gradient-to-br ${stat.gradient} rounded-xl p-2 md:p-3 shadow-lg`}
-                  >
-                    <stat.icon className="h-5 w-5 md:h-6 md:w-6 text-white" />
+                  <div className="bg-gray-100 rounded-xl p-2 md:p-3">
+                    <stat.icon className="h-5 w-5 md:h-6 md:w-6 text-gray-600" />
                   </div>
                 </div>
               </div>
@@ -206,10 +181,10 @@ export default function AdminPackagesPage() {
         </div>
 
         {/* Packages Table */}
-        <div className="bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-700/50 overflow-hidden shadow-xl">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-700/50">
-              <thead className="bg-gray-800/80">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
                   {[
                     "Package Name",
@@ -221,54 +196,54 @@ export default function AdminPackagesPage() {
                   ].map((header) => (
                     <th
                       key={header}
-                      className="px-4 md:px-6 py-3 md:py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider"
+                      className="px-4 md:px-6 py-3 md:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
                     >
                       {header}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700/50">
+              <tbody className="divide-y divide-gray-200">
                 {packages.map((p) => (
                   <tr
                     key={p.id}
-                    className="group hover:bg-gray-700/30 transition-all duration-200"
+                    className="hover:bg-gray-50 transition-colors duration-200"
                   >
                     <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <CubeIcon className="h-4 w-4 md:h-5 md:w-5 text-purple-400" />
+                        <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center">
+                          <CubeIcon className="h-4 w-4 md:h-5 md:w-5 text-gray-500" />
                         </div>
                         <div className="ml-3 md:ml-4">
-                          <div className="text-sm font-semibold text-white">
+                          <div className="text-sm font-medium text-gray-900">
                             {p.name}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 md:px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border border-purple-500/30">
+                      <span className="px-2 md:px-3 py-1 inline-flex text-xs leading-5 font-medium rounded-full bg-gray-100 text-gray-700">
                         {p.tier}
                       </span>
                     </td>
                     <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-white">
+                      <div className="text-sm font-medium text-gray-900">
                         ${p.priceMonthly}
                       </div>
                       <div className="text-xs text-gray-500">per month</div>
                     </td>
                     <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-white">
+                      <div className="text-sm font-medium text-gray-900">
                         ${p.priceYearly}
                       </div>
                       <div className="text-xs text-gray-500">per year</div>
                     </td>
                     <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`px-2 md:px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        className={`px-2 md:px-3 py-1 inline-flex text-xs leading-5 font-medium rounded-full ${
                           p.isActive
-                            ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border border-green-500/30"
-                            : "bg-gradient-to-r from-red-500/20 to-orange-500/20 text-red-300 border border-red-500/30"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-600"
                         }`}
                       >
                         {p.isActive ? "Active" : "Inactive"}
@@ -278,16 +253,16 @@ export default function AdminPackagesPage() {
                       <div className="flex items-center gap-2 md:gap-3">
                         <button
                           onClick={() => openEdit(p)}
-                          className="text-gray-400 hover:text-purple-400 transition-all duration-200 inline-flex items-center gap-1 group/btn"
+                          className="text-gray-500 hover:text-gray-700 transition-colors duration-200 inline-flex items-center gap-1"
                         >
-                          <PencilIcon className="h-3 w-3 md:h-4 md:w-4 group-hover/btn:scale-110 transition-transform" />
+                          <PencilIcon className="h-3 w-3 md:h-4 md:w-4" />
                           <span className="text-xs md:text-sm">Edit</span>
                         </button>
                         <button
                           onClick={() => remove(p.id)}
-                          className="text-gray-400 hover:text-red-400 transition-all duration-200 inline-flex items-center gap-1 group/btn"
+                          className="text-gray-500 hover:text-red-600 transition-colors duration-200 inline-flex items-center gap-1"
                         >
-                          <TrashIcon className="h-3 w-3 md:h-4 md:w-4 group-hover/btn:scale-110 transition-transform" />
+                          <TrashIcon className="h-3 w-3 md:h-4 md:w-4" />
                           <span className="text-xs md:text-sm">Delete</span>
                         </button>
                       </div>
@@ -301,11 +276,11 @@ export default function AdminPackagesPage() {
 
         {/* Empty State */}
         {packages.length === 0 && (
-          <div className="text-center py-16">
-            <div className="inline-flex p-4 bg-gray-800/50 rounded-full mb-4">
-              <CubeIcon className="h-12 w-12 text-gray-600" />
+          <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+            <div className="inline-flex p-4 bg-gray-100 rounded-full mb-4">
+              <CubeIcon className="h-12 w-12 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-300 mb-2">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
               No packages yet
             </h3>
             <p className="text-gray-500">
@@ -317,15 +292,15 @@ export default function AdminPackagesPage() {
 
       {/* Modal Overlay */}
       {modal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl max-w-md w-full transform transition-all border border-gray-700/50">
-            <div className="flex justify-between items-center p-6 border-b border-gray-700/50">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
                 {modal === "edit" ? "Edit Package" : "Create Package"}
               </h2>
               <button
                 onClick={() => setModal(null)}
-                className="text-gray-400 hover:text-gray-300 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
@@ -333,31 +308,31 @@ export default function AdminPackagesPage() {
 
             <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Package Name
                 </label>
                 <input
                   placeholder="e.g., Pro Plan"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-gray-700/50 border border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-white placeholder-gray-500"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tier
                 </label>
                 <input
                   placeholder="e.g., premium"
                   value={form.tier}
                   onChange={(e) => setForm({ ...form, tier: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-gray-700/50 border border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-white placeholder-gray-500"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Monthly Price ($)
                 </label>
                 <input
@@ -367,12 +342,12 @@ export default function AdminPackagesPage() {
                   onChange={(e) =>
                     setForm({ ...form, priceMonthly: Number(e.target.value) })
                   }
-                  className="w-full px-4 py-2.5 bg-gray-700/50 border border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-white placeholder-gray-500"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Yearly Price ($)
                 </label>
                 <input
@@ -382,21 +357,21 @@ export default function AdminPackagesPage() {
                   onChange={(e) =>
                     setForm({ ...form, priceYearly: Number(e.target.value) })
                   }
-                  className="w-full px-4 py-2.5 bg-gray-700/50 border border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-white placeholder-gray-500"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
                 />
               </div>
             </div>
 
-            <div className="flex gap-3 p-6 border-t border-gray-700/50 bg-gray-800/50 rounded-b-2xl">
+            <div className="flex gap-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
               <button
                 onClick={save}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                className="flex-1 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg transition-all duration-200"
               >
                 Save Changes
               </button>
               <button
                 onClick={() => setModal(null)}
-                className="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold rounded-xl transition-all duration-200"
+                className="flex-1 px-4 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-all duration-200"
               >
                 Cancel
               </button>

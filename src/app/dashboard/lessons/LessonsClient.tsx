@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   Clock,
@@ -10,6 +10,13 @@ import {
   PlayCircle,
   Lock,
   Filter,
+  X,
+  ChevronDown,
+  BookOpen,
+  Star,
+  TrendingUp,
+  Sparkles,
+  Mountain,
 } from "lucide-react";
 
 type Lesson = {
@@ -23,6 +30,17 @@ type Lesson = {
   createdAt: string;
 };
 
+const levelColors = {
+  Beginner: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  Intermediate: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  Advanced: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+};
+
+const sportIcons = {
+  Skiing: Mountain,
+  Snowboarding: TrendingUp,
+};
+
 export default function LessonsClient() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,11 +51,10 @@ export default function LessonsClient() {
   const [sportFilter, setSportFilter] = useState("All");
   const [showFilters, setShowFilters] = useState(false);
 
-  // ✅ FETCH DATA
   useEffect(() => {
     const fetchLessons = async () => {
       try {
-        const res = await fetch("/api/lessons-user"); // 👈 create this (explained below)
+        const res = await fetch("/api/lessons-user");
         const data = await res.json();
 
         setLessons(data.lessons || []);
@@ -52,7 +69,6 @@ export default function LessonsClient() {
     fetchLessons();
   }, []);
 
-  // ✅ FILTER LOGIC
   const filtered = useMemo(() => {
     return lessons.filter((l) => {
       if (search && !l.title.toLowerCase().includes(search.toLowerCase()))
@@ -65,127 +81,300 @@ export default function LessonsClient() {
     });
   }, [lessons, search, levelFilter, sportFilter]);
 
-  // ✅ LOADING STATE
+  const resetFilters = () => {
+    setSearch("");
+    setLevelFilter("All");
+    setSportFilter("All");
+  };
+
   if (loading) {
-    return <p className="text-slate-400">Loading lessons...</p>;
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="relative w-20 h-20 mx-auto">
+            <div className="absolute inset-0 border-4 border-ice/20 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-ice rounded-full border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-slate-400 mt-4">Loading your lessons...</p>
+        </div>
+      </div>
+    );
   }
 
-  // ✅ NO SUBSCRIPTION UI
   if (!hasSubscription) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <Lock className="w-12 h-12 text-slate-500 mb-4" />
+      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="relative"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-ice/20 to-purple-500/20 blur-3xl rounded-full"></div>
+          <Lock className="w-20 h-20 text-ice mb-6 relative" />
+        </motion.div>
 
-        <h2 className="text-xl font-semibold text-snow">No Plan Selected</h2>
-
-        <p className="text-slate-400 mt-2 mb-6">
-          Choose a plan to unlock lessons.
+        <h2 className="text-3xl font-bold text-white mb-3">
+          Unlock Your Potential
+        </h2>
+        <p className="text-slate-400 mb-8 max-w-md">
+          Choose a plan to access our complete library of premium lessons and
+          start your journey to mastery.
         </p>
 
         <Link href="/pricing">
-          <button className="px-6 py-3 rounded-xl bg-ice text-black font-semibold">
-            Go to Pricing
-          </button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-8 py-3 rounded-xl bg-gradient-to-r from-ice to-ice/80 text-black font-semibold shadow-lg shadow-ice/20"
+          >
+            View Plans
+          </motion.button>
         </Link>
       </div>
     );
   }
 
-  // ✅ UI
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-snow">Your Lesson Library</h1>
+    <div className="space-y-8">
+      {/* Header Section */}
+      <div className="flex justify-between items-end">
+        <div>
+          <motion.h1
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-3xl font-bold bg-gradient-to-r from-white to-ice bg-clip-text text-transparent"
+          >
+            Your Lesson Library
+          </motion.h1>
+          <p className="text-slate-400 mt-2">
+            {filtered.length} {filtered.length === 1 ? "lesson" : "lessons"}{" "}
+            available
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all ${
+              showFilters
+                ? "bg-ice text-black"
+                : "bg-[#1e293b] text-slate-300 hover:bg-slate-700"
+            }`}
+          >
+            <Filter className="w-4 h-4" />
+            <span>Filters</span>
+            <ChevronDown
+              className={`w-4 h-4 transition-transform ${
+                showFilters ? "rotate-180" : ""
+              }`}
+            />
+          </motion.button>
+        </div>
       </div>
 
-      {/* Search + Filter */}
-      <div className="flex gap-3">
+      {/* Search Bar */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative"
+      >
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <input
           type="text"
-          placeholder="Search lessons..."
+          placeholder="Search by title..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-4 py-2 rounded-xl bg-[#1e293b] text-white w-full"
+          className="w-full pl-12 pr-4 py-3 rounded-xl bg-[#1e293b] text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-ice/50 transition-all"
         />
-
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="px-4 py-2 bg-slate-700 rounded-xl"
-        >
-          <Filter />
-        </button>
-      </div>
-
-      {showFilters && (
-        <div className="flex gap-3">
-          <select
-            value={levelFilter}
-            onChange={(e) => setLevelFilter(e.target.value)}
-            className="p-2 bg-[#1e293b] rounded-lg"
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
           >
-            <option>All</option>
-            <option>Beginner</option>
-            <option>Intermediate</option>
-            <option>Advanced</option>
-          </select>
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </motion.div>
 
-          <select
-            value={sportFilter}
-            onChange={(e) => setSportFilter(e.target.value)}
-            className="p-2 bg-[#1e293b] rounded-lg"
+      {/* Filters Panel */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
           >
-            <option>All</option>
-            <option>Skiing</option>
-            <option>Snowboarding</option>
-          </select>
-        </div>
-      )}
+            <div className="bg-[#1e293b] rounded-xl p-6 space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-white font-semibold">Filter Lessons</h3>
+                <button
+                  onClick={resetFilters}
+                  className="text-sm text-ice hover:text-ice/80 transition-colors"
+                >
+                  Reset all
+                </button>
+              </div>
 
-      {/* Lessons Grid */}
-      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map((lesson, i) => (
-          <Link key={lesson.id} href={`/dashboard/lessons/${lesson.id}`}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="rounded-xl bg-[#1e293b] p-4 hover:scale-[1.02]"
-            >
-              <div className="rounded-xl overflow-hidden bg-[#1e293b] hover:scale-[1.02] transition">
-                {/* ✅ THUMBNAIL HERE */}
-                <div className="relative h-36 w-full">
-                  {lesson.thumbnailUrl ? (
-                    <img
-                      src={lesson.thumbnailUrl}
-                      alt={lesson.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-900" />
-                  )}
-
-                  {/* Overlay Play Icon */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                    <PlayCircle className="w-10 h-10 text-white/70" />
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-slate-400 mb-2 block">
+                    Difficulty Level
+                  </label>
+                  <div className="flex gap-2">
+                    {["All", "Beginner", "Intermediate", "Advanced"].map(
+                      (level) => (
+                        <button
+                          key={level}
+                          onClick={() => setLevelFilter(level)}
+                          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                            levelFilter === level
+                              ? "bg-ice text-black font-medium"
+                              : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                          }`}
+                        >
+                          {level}
+                        </button>
+                      )
+                    )}
                   </div>
                 </div>
 
-                {/* ✅ CONTENT BELOW IMAGE */}
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-ice">{lesson.level}</span>
+                <div>
+                  <label className="text-sm text-slate-400 mb-2 block">
+                    Sport Type
+                  </label>
+                  <div className="flex gap-2">
+                    {["All", "Skiing", "Snowboarding"].map((sport) => (
+                      <button
+                        key={sport}
+                        onClick={() => setSportFilter(sport)}
+                        className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                          sportFilter === sport
+                            ? "bg-ice text-black font-medium"
+                            : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                        }`}
+                      >
+                        {sport}
+                      </button>
+                    ))}
                   </div>
-
-                  <h3 className="text-white font-semibold">{lesson.title}</h3>
-
-                  <p className="text-slate-400 text-xs mt-1">{lesson.sport}</p>
                 </div>
               </div>
-            </motion.div>
-          </Link>
-        ))}
-      </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Lessons Grid */}
+      {filtered.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-20"
+        >
+          <BookOpen className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">
+            No lessons found
+          </h3>
+          <p className="text-slate-400">
+            Try adjusting your search or filters to find what you're looking
+            for.
+          </p>
+          <button
+            onClick={resetFilters}
+            className="mt-4 px-4 py-2 bg-ice/10 text-ice rounded-lg hover:bg-ice/20 transition-colors"
+          >
+            Clear filters
+          </button>
+        </motion.div>
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((lesson, i) => {
+            const SportIcon = sportIcons[lesson.sport];
+            return (
+              <Link key={lesson.id} href={`/dashboard/lessons/${lesson.id}`}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  whileHover={{ y: -4 }}
+                  className="group cursor-pointer"
+                >
+                  <div className="bg-[#1e293b] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-ice/10 transition-all duration-300">
+                    {/* Thumbnail */}
+                    <div className="relative h-48 overflow-hidden">
+                      {lesson.thumbnailUrl ? (
+                        <img
+                          src={lesson.thumbnailUrl}
+                          alt={lesson.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
+                          <Mountain className="w-12 h-12 text-slate-600" />
+                        </div>
+                      )}
+
+                      {/* Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute bottom-4 left-4 right-4">
+                          <div className="flex items-center gap-2 text-white">
+                            <PlayCircle className="w-5 h-5" />
+                            <span className="text-sm">Start Lesson</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Level Badge */}
+                      <div className="absolute top-3 left-3">
+                        <span
+                          className={`px-2 py-1 rounded-lg text-xs font-medium border ${
+                            levelColors[lesson.level]
+                          }`}
+                        >
+                          {lesson.level}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          {SportIcon && (
+                            <SportIcon className="w-4 h-4 text-ice" />
+                          )}
+                          <span className="text-xs text-ice font-medium">
+                            {lesson.sport}
+                          </span>
+                        </div>
+                        {lesson.duration && (
+                          <div className="flex items-center gap-1 text-xs text-slate-500">
+                            <Clock className="w-3 h-3" />
+                            <span>{lesson.duration} min</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <h3 className="text-white font-semibold text-lg mb-2 group-hover:text-ice transition-colors">
+                        {lesson.title}
+                      </h3>
+
+                      <p className="text-slate-400 text-sm line-clamp-2">
+                        {lesson.description ||
+                          "Learn essential techniques and improve your skills with this comprehensive lesson."}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
