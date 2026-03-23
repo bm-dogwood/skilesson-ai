@@ -165,7 +165,7 @@ export default function VideosPage() {
             {(currentUserRole === "admin" ||
               currentUserRole === "instructor") && (
               <Link
-                href="/dashboard/lessons/create"
+                href="/admin/content/add-content"
                 className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-primary-600 text-white rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all duration-300 text-sm font-semibold"
               >
                 <svg
@@ -505,7 +505,7 @@ export default function VideosPage() {
                     {/* Actions */}
                     <div className="flex gap-3 pt-2">
                       <Link
-                        href={`/dashboard/lessons/${lesson.id}`}
+                        href={`/admin/content/view-content/${lesson.id}`}
                         className="flex-1 text-center px-4 py-2.5 bg-gradient-to-r from-primary to-primary-600 text-white rounded-xl hover:shadow-md transition-all text-sm font-semibold"
                       >
                         View Lesson
