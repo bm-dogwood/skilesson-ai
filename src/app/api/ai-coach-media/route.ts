@@ -165,9 +165,9 @@ export async function POST(req: NextRequest) {
     }
 
     // ⚡ FAST MODE (skip second AI call if needed)
-    // const feedback = await generateCoachFeedback(description);
+    const feedback = await generateCoachFeedback(description);
     // 👉 For ultra-fast:
-    const feedback = description;
+    // const feedback = description;
 
     return NextResponse.json({
       success: true,
