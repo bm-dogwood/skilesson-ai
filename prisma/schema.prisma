@@ -22,6 +22,7 @@ model User {
 
   progress  Progress[]
    lessons Lesson[]
+   submissions AISubmission[]
   subscription Subscription?
 }
 
@@ -58,6 +59,7 @@ model Progress {
   lessonId    String
   status      ProgressStatus
   completedAt DateTime?
+  timestamp   Float?  
 
   user   User   @relation(fields: [userId], references: [id])
   lesson Lesson @relation(fields: [lessonId], references: [id])
@@ -116,4 +118,24 @@ model Package {
 
   subscriptions Subscription[]
   lessons Lesson[]
+}
+
+model AISubmission {
+  id        String   @id @default(uuid())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  mediaUrl  String
+  mediaType String   // "image" | "video"
+
+  aiDescription String
+  aiFeedback    String
+
+  instructorFeedback String?
+
+  status   String @default("pending") // pending | reviewed
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

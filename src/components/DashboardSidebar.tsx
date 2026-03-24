@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Mountain,
+  History,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -23,8 +24,7 @@ const navItems = [
   { href: "/dashboard/lessons", label: "My Lessons", icon: BookOpen },
   { href: "/dashboard/progress", label: "Progress", icon: TrendingUp },
   { href: "/dashboard/coach", label: "AI Coach", icon: Bot },
-  { href: "/dashboard/community", label: "Community", icon: Users },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard/history", label: "History", icon: History },
 ];
 
 export default function DashboardSidebar() {

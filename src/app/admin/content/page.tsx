@@ -513,7 +513,7 @@ export default function VideosPage() {
                       {(currentUserRole === "admin" ||
                         currentUserRole === "instructor") && (
                         <Link
-                          href={`/dashboard/lessons/${lesson.id}/edit`}
+                          href={`/admin/content/edit-content/${lesson.id}`}
                           className="px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
                         >
                           Edit

@@ -1,188 +1,146 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import ffmpeg from "fluent-ffmpeg";
+import cloudinary from "@/lib/cloudinary";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth]/route";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 
-// 🧠 Analyze image (FIXED: timeout + lighter model)
-async function analyzeImage(buffer: Buffer) {
-  const base64 = buffer.toString("base64");
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 120000); // 2 min
-
+// 🧠 AI Image Analysis (using URL)
+async function analyzeImageUrl(imageUrl: string) {
   try {
     const res = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.SECRET_KEY || "",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "llava:latest",
-        prompt: "Describe ski posture issues briefly.", // ✅ shorter prompt
-        images: [base64],
+        prompt: "Describe ski posture issues briefly.",
+        images: [imageUrl],
         stream: false,
-        options: {
-          num_predict: 80, // ✅ limit output
-        },
+        options: { num_predict: 80 },
       }),
-      signal: controller.signal,
     });
 
     const data = await res.json();
-    return data.response || "";
+    return data.response || "No analysis.";
   } catch (err) {
-    console.error("Image analysis error:", err);
-    return "Could not analyze image.";
-  } finally {
-    clearTimeout(timeout);
+    console.error(err);
+    return "AI analysis failed.";
   }
 }
 
-// 🎥 Extract frames (FIXED: only 1 frame)
-function extractFrames(videoPath: string): Promise<string[]> {
-  return new Promise((resolve, reject) => {
-    const frames: string[] = [];
-
-    ffmpeg(videoPath)
-      .on("end", () => resolve(frames))
-      .on("error", reject)
-      .screenshots({
-        count: 1, // ✅ BIG speed improvement
-        folder: "/tmp",
-        filename: "frame-%i.png",
-      })
-      .on("filenames", (names) => {
-        names.forEach((name) => frames.push(`/tmp/${name}`));
-      });
-  });
-}
-
-// 🧠 Video analysis
-async function analyzeVideo(buffer: Buffer) {
-  const tempPath = `/tmp/video-${Date.now()}.mp4`;
-  fs.writeFileSync(tempPath, buffer);
-
-  const frames = await extractFrames(tempPath);
-
-  const analyses = await Promise.all(
-    frames.map((frame) => {
-      const imgBuffer = fs.readFileSync(frame);
-      return analyzeImage(imgBuffer);
-    })
-  );
-
-  return analyses.join("\n");
-}
-
-// 🏂 Coaching (OPTIONAL — can skip for speed)
+// 🏂 Coaching
 async function generateCoachFeedback(description: string) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 120000);
-
   try {
     const res = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.SECRET_KEY || "",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "llama3",
         prompt: `
-You are a professional ski/snowboard coach.
+You are a ski coach.
 
-Based on this:
+Based on:
 ${description}
 
 Give:
 - 1 positive
 - 1 correction
 - 1 actionable tip
-
-Keep it short and clear.
+Short.
         `,
         stream: false,
-        options: {
-          num_predict: 100,
-        },
       }),
-      signal: controller.signal,
     });
 
     const data = await res.json();
-    return data.response || "";
-  } catch (err) {
-    console.error("Coach error:", err);
-    return description; // fallback
-  } finally {
-    clearTimeout(timeout);
+    return data.response || description;
+  } catch {
+    return description;
   }
 }
 
-// 🚀 MAIN API
 export async function POST(req: NextRequest) {
   try {
-    // 🔐 Security
-    const key = req.nextUrl.searchParams.get("key");
-    console.log("URL KEY:", key);
-    console.log("ENV KEY:", process.env.SECRET_KEY);
-    if (key !== process.env.SECRET_KEY) {
+    // 🔐 Auth
+    const session = await getServerSession(authOptions);
+
+    if (!session?.userId) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
+    console.log({
+      cloud: process.env.CLOUDINARY_CLOUD_NAME,
+      key: process.env.CLOUDINARY_API_KEY,
+    });
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
     if (!file) {
-      return NextResponse.json({
-        success: false,
-        error: "No file uploaded",
-      });
+      return NextResponse.json({ success: false });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const mime = file.type;
 
-    let description = "";
+    // ☁️ STEP 1: Upload to Cloudinary
+    const uploadRes: any = await new Promise((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          {
+            resource_type: "auto",
+            folder: "ai-coach",
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        )
+        .end(buffer);
+    });
 
-    // 🖼️ Image
-    if (mime.startsWith("image")) {
-      description = await analyzeImage(buffer);
+    const mediaUrl = uploadRes.secure_url;
+    const mediaType = uploadRes.resource_type;
+
+    // 🎥 If video → use thumbnail frame
+    let analysisUrl = mediaUrl;
+    if (mediaType === "video") {
+      analysisUrl = mediaUrl.replace("/upload/", "/upload/so_1/");
     }
 
-    // 🎥 Video
-    else if (mime.startsWith("video")) {
-      description = await analyzeVideo(buffer);
-    } else {
-      return NextResponse.json({
-        success: false,
-        error: "Unsupported file type",
-      });
-    }
+    // 🧠 STEP 2: AI
+    const description = await analyzeImageUrl(analysisUrl);
 
-    // ⚡ FAST MODE (skip second AI call if needed)
+    // 🏂 STEP 3: Feedback
     const feedback = await generateCoachFeedback(description);
-    // 👉 For ultra-fast:
-    // const feedback = description;
 
+    // 💾 STEP 4: Save to DB
+    const submission = await prisma.aISubmission.create({
+      data: {
+        userId: session.userId,
+        mediaUrl,
+        mediaType,
+        aiDescription: description,
+        aiFeedback: feedback,
+      },
+    });
+
+    // ✅ RESPONSE
     return NextResponse.json({
       success: true,
       data: {
         aiDescription: description,
         aiFeedback: feedback,
-        instructorFeedback: null,
+        submissionId: submission.id,
       },
     });
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error("API ERROR:", err);
 
     return NextResponse.json({
       success: false,
-      error: "Processing failed",
+      error: "Something went wrong",
     });
   }
 }

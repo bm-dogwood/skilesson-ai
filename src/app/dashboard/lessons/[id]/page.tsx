@@ -16,6 +16,7 @@ import {
   BookOpen,
   Lightbulb,
 } from "lucide-react";
+import { useRef } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 
 interface LessonData {
@@ -57,7 +58,7 @@ export default function LessonDetailPage() {
   const lessonId = params.id as string;
   const [lesson, setLesson] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [notes, setNotes] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
@@ -80,6 +81,72 @@ export default function LessonDetailPage() {
 
     if (lessonId) fetchLesson();
   }, [lessonId]);
+
+  useEffect(() => {
+    if (!lesson?.progress?.[0] || !videoRef.current) return;
+
+    const video = videoRef.current;
+
+    const handleLoaded = () => {
+      video.currentTime = lesson.progress[0].timestamp;
+    };
+
+    video.addEventListener("loadedmetadata", handleLoaded);
+
+    return () => {
+      video.removeEventListener("loadedmetadata", handleLoaded);
+    };
+  }, [lesson]);
+
+  useEffect(() => {
+    if (!lesson) return;
+
+    const interval = setInterval(() => {
+      if (videoRef.current) {
+        fetch("/api/progress", {
+          method: "POST",
+          body: JSON.stringify({
+            lessonId: lesson.id,
+            timestamp: videoRef.current.currentTime,
+          }),
+        });
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [lesson]);
+  const handleTimeUpdate = () => {
+    if (!videoRef.current || !lesson?.duration) return;
+
+    const current = videoRef.current.currentTime;
+    const duration = lesson.duration;
+
+    if (current / duration > 0.9 && !isCompleted) {
+      fetch("/api/progress", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          lessonId: lesson.id,
+          status: "COMPLETED",
+        }),
+      });
+
+      setIsCompleted(true);
+    }
+  };
+  const saveProgress = () => {
+    if (!videoRef.current) return;
+
+    fetch("/api/progress", {
+      method: "POST",
+      body: JSON.stringify({
+        lessonId: lesson.id,
+        timestamp: videoRef.current.currentTime,
+      }),
+    });
+  };
   const handleComplete = async () => {
     const newStatus = isCompleted ? "IN_PROGRESS" : "COMPLETED";
 
@@ -159,10 +226,14 @@ export default function LessonDetailPage() {
             className="relative aspect-video rounded-2xl bg-gradient-to-br from-[#1e293b] via-[#162033] to-[#0c1a2e] border border-white/[0.06] overflow-hidden flex items-center justify-center"
           >
             <div className="relative aspect-video rounded-2xl overflow-hidden bg-black">
-              {lesson.videoUrl ? (
+              {lesson.playbackId ? (
                 <video
-                  src={lesson.videoUrl}
+                  ref={videoRef}
+                  src={`https://stream.mux.com/${lesson.playbackId}.m3u8`}
                   controls
+                  onPause={saveProgress}
+                  onEnded={saveProgress}
+                  onTimeUpdate={handleTimeUpdate}
                   className="w-full h-full object-cover"
                 />
               ) : lesson.thumbnailUrl ? (

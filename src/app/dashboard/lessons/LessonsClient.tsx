@@ -28,6 +28,11 @@ type Lesson = {
   thumbnailUrl?: string;
   duration?: number;
   createdAt: string;
+
+  progress?: {
+    timestamp?: number;
+    status?: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
+  }[];
 };
 
 const levelColors = {
@@ -50,6 +55,16 @@ export default function LessonsClient() {
   const [levelFilter, setLevelFilter] = useState("All");
   const [sportFilter, setSportFilter] = useState("All");
   const [showFilters, setShowFilters] = useState(false);
+  const getProgressPercent = (lesson: Lesson) => {
+    const p = lesson.progress?.[0];
+
+    if (!p || !lesson.duration) return 0;
+
+    return Math.min(
+      100,
+      Math.round(((p.timestamp || 0) / lesson.duration) * 100)
+    );
+  };
 
   useEffect(() => {
     const fetchLessons = async () => {
@@ -133,7 +148,10 @@ export default function LessonsClient() {
       </div>
     );
   }
-
+  const continueWatching = lessons.filter((l) => {
+    const p = l.progress?.[0];
+    return p && p.timestamp && p.timestamp > 5 && p.status !== "COMPLETED";
+  });
   return (
     <div className="space-y-8">
       {/* Header Section */}
@@ -267,7 +285,47 @@ export default function LessonsClient() {
           </motion.div>
         )}
       </AnimatePresence>
+      {continueWatching.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-white">Continue Watching</h2>
 
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {continueWatching.map((lesson) => {
+              const percent = getProgressPercent(lesson);
+
+              return (
+                <Link key={lesson.id} href={`/dashboard/lessons/${lesson.id}`}>
+                  <div className="bg-[#1e293b] rounded-xl overflow-hidden">
+                    <div className="relative h-40">
+                      <img
+                        src={lesson.thumbnailUrl}
+                        className="w-full h-full object-cover"
+                      />
+
+                      {/* 🔥 Progress bar */}
+                      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
+                        <div
+                          className="h-full bg-ice"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="p-4">
+                      <h3 className="text-white font-semibold">
+                        {lesson.title}
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1">
+                        {percent}% watched
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* Lessons Grid */}
       {filtered.length === 0 ? (
         <motion.div
@@ -304,7 +362,6 @@ export default function LessonsClient() {
                   className="group cursor-pointer"
                 >
                   <div className="bg-[#1e293b] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-ice/10 transition-all duration-300">
-                    {/* Thumbnail */}
                     <div className="relative h-48 overflow-hidden">
                       {lesson.thumbnailUrl ? (
                         <img
@@ -318,6 +375,18 @@ export default function LessonsClient() {
                         </div>
                       )}
 
+                      {/* 🔥 PROGRESS BAR */}
+                      {lesson.progress?.[0] && (
+                        <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
+                          <div
+                            className="h-full bg-ice"
+                            style={{
+                              width: `${getProgressPercent(lesson)}%`,
+                            }}
+                          />
+                        </div>
+                      )}
+
                       {/* Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="absolute bottom-4 left-4 right-4">
@@ -327,7 +396,12 @@ export default function LessonsClient() {
                           </div>
                         </div>
                       </div>
-
+                      {lesson.progress?.[0]?.status === "COMPLETED" && (
+                        <div className="flex items-center gap-1 text-green-400 text-xs mt-2">
+                          <CheckCircle2 className="w-4 h-4" />
+                          Completed
+                        </div>
+                      )}
                       {/* Level Badge */}
                       <div className="absolute top-3 left-3">
                         <span

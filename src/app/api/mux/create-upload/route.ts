@@ -1,17 +1,11 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import Mux from "@mux/mux-node";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route";
-
-const mux = new Mux({
-  tokenId: process.env.MUX_TOKEN_ID!,
-  tokenSecret: process.env.MUX_TOKEN_SECRET!,
-});
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
+    const { lessonId, status, timestamp } = await req.json();
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -25,39 +19,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const { title, description, level, sport, packageId } = await req.json();
-
-    // 🎬 Create upload on Mux
-    const upload = await mux.video.uploads.create({
-      new_asset_settings: {
-        playback_policy: ["public"],
+    const progress = await prisma.progress.upsert({
+      where: {
+        userId_lessonId: {
+          userId: user.id,
+          lessonId,
+        },
       },
-      cors_origin: "*",
-    });
-
-    // 💾 Save lesson
-    const lesson = await prisma.lesson.create({
-      data: {
-        title,
-        description,
-        level,
-        sport,
-        packageId,
-        uploadId: upload.id,
+      update: {
+        ...(status && {
+          status,
+          completedAt: status === "COMPLETED" ? new Date() : null,
+        }),
+        ...(timestamp !== undefined && {
+          timestamp,
+        }),
+      },
+      create: {
         userId: user.id,
-        duration: 0,
+        lessonId,
+        status: status || "IN_PROGRESS",
+        timestamp: timestamp || 0,
+        completedAt: status === "COMPLETED" ? new Date() : null,
       },
     });
-    const lessonId = crypto.randomUUID();
-    return NextResponse.json({
-      uploadUrl: upload.url,
-      lessonId,
-    });
+
+    return NextResponse.json({ success: true, progress });
   } catch (err) {
-    console.error("MUX CREATE UPLOAD ERROR:", err);
-    return NextResponse.json(
-      { error: "Failed to create upload" },
-      { status: 500 }
-    );
+    console.error(err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

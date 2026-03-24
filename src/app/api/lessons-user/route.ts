@@ -28,14 +28,10 @@ export async function GET() {
     where: {
       packageId: user.subscription.packageId,
     },
-    select: {
-      id: true,
-      title: true,
-      level: true,
-      sport: true,
-      thumbnailUrl: true, // ✅ ADD THIS
-      progress: true,
-      videoUrl: true,
+    include: {
+      progress: {
+        where: { userId: user.id },
+      },
     },
     orderBy: { createdAt: "desc" },
   });

@@ -62,21 +62,23 @@ export default function AICoachUpload() {
     setResult(null);
 
     try {
-      const res = await fetch("/api/ai-coach-media?key=my-secret-key", {
+      const res = await fetch("/api/ai-coach-media", {
         method: "POST",
         body: formData,
       });
+
       const data = await res.json();
 
       if (!data.success) {
-        // ✅ fallback instead of alert
         setResult(getRandomFallback());
         return;
       }
 
-      setResult(data.data);
+      setResult({
+        aiDescription: data.data.aiDescription,
+        aiFeedback: data.data.aiFeedback,
+      });
     } catch (err) {
-      console.error(err);
       setResult(getRandomFallback());
     } finally {
       setLoading(false);

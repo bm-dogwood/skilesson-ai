@@ -15,7 +15,7 @@ import {
   Snowflake,
   Timer,
 } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
+import { useEffect, useState } from "react";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -81,7 +81,7 @@ function LargeProgressRing({ progress }: { progress: number }) {
           transition={{ delay: 0.8, duration: 0.5 }}
           className="text-4xl font-bold font-heading text-snow"
         >
-          23%
+          {progress}%
         </motion.span>
         <span className="text-xs text-slate-400 mt-1">Complete</span>
       </div>
@@ -189,6 +189,23 @@ const skills = [
 ];
 
 export default function ProgressPage() {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch("/api/progress-summary");
+        const data = await res.json();
+        setStats(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
   return (
     <motion.div
       variants={stagger}
@@ -213,9 +230,11 @@ export default function ProgressPage() {
           variants={fadeInUp}
           className="flex flex-col items-center justify-center rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] p-8"
         >
-          <LargeProgressRing progress={23} />
+          <LargeProgressRing progress={stats?.progressPercent || 0} />
+
           <p className="text-sm text-slate-400 mt-4">
-            13 of 56 lessons completed
+            {stats?.completedLessons || 0} of {stats?.totalLessons || 0} lessons
+            completed
           </p>
         </motion.div>
 
@@ -228,7 +247,7 @@ export default function ProgressPage() {
             Level Breakdown
           </h3>
           <div className="space-y-5">
-            {levelBreakdown.map((level) => {
+            {stats?.levelBreakdown?.map((level: any) => {
               const pct =
                 level.total > 0
                   ? Math.round((level.completed / level.total) * 100)
@@ -271,7 +290,11 @@ export default function ProgressPage() {
           </h3>
           <div className="space-y-5">
             {[
-              { label: "Total Time", value: "12.5 hours", icon: Clock },
+              {
+                label: "Total Time",
+                value: `${(stats?.completedLessons || 0) * 10} min`,
+                icon: Clock,
+              },
               { label: "This Week", value: "3.2 hours", icon: Calendar },
               { label: "Avg Session", value: "25 min", icon: Timer },
             ].map((stat) => (
