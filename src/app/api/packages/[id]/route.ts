@@ -1,19 +1,19 @@
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 // UPDATE package
 export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
     const body = await req.json();
 
     const updated = await prisma.package.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name: body.name,
-
         description: body.description,
         priceMonthly: body.priceMonthly,
         priceYearly: body.priceYearly,
@@ -32,12 +32,14 @@ export async function PUT(
 
 // DELETE package
 export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
+
     await prisma.package.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });
