@@ -1,10 +1,13 @@
-"use client";
-
 // app/admin/dashboard/page.tsx
 
 import Link from "next/link";
 import { Icon, Badge, ADMIN_CSS } from "../_components";
-
+import {
+  getDashboardStats,
+  getRecentUsers,
+  getPlanDistribution,
+  getRevenueByMonth,
+} from "@/lib/dashboard";
 const STATS = {
   totalUsers: 12483,
   activeSubscriptions: 3841,
@@ -47,34 +50,38 @@ const RECENT_USERS = [
   },
 ];
 
-const STAT_CARDS = [
-  {
-    label: "Total Users",
-    value: STATS.totalUsers.toLocaleString(),
-    delta: "+8.2%",
-    positive: true,
-  },
-  {
-    label: "Active Subscriptions",
-    value: STATS.activeSubscriptions.toLocaleString(),
-    delta: "+12.1%",
-    positive: true,
-  },
-  {
-    label: "Lessons Published",
-    value: STATS.totalLessons.toString(),
-    delta: "+4",
-    positive: true,
-  },
-  {
-    label: "Monthly Revenue",
-    value: `$${(STATS.monthlyRevenue / 1000).toFixed(1)}k`,
-    delta: "+6.5%",
-    positive: true,
-  },
-];
+export default async function AdminDashboardPage() {
+  const stats = await getDashboardStats();
+  const users = await getRecentUsers();
+  const plans = await getPlanDistribution();
+  const revenue = await getRevenueByMonth();
 
-export default function AdminDashboardPage() {
+  const STAT_CARDS = [
+    {
+      label: "Total Users",
+      value: stats.totalUsers.toLocaleString(),
+      delta: "+",
+      positive: true,
+    },
+    {
+      label: "Active Subscriptions",
+      value: stats.activeSubscriptions.toLocaleString(),
+      delta: "+",
+      positive: true,
+    },
+    {
+      label: "Lessons Published",
+      value: stats.totalLessons.toString(),
+      delta: "+",
+      positive: true,
+    },
+    {
+      label: "Monthly Revenue",
+      value: `$${stats.monthlyRevenue.toFixed(0)}`,
+      delta: "+",
+      positive: true,
+    },
+  ];
   return (
     <>
       <style>{`
@@ -170,25 +177,16 @@ export default function AdminDashboardPage() {
       <div className="chart-row">
         <div className="card-block">
           <div className="card-title">Revenue — last 6 months</div>
-          <div className="bar-chart">
-            {[
-              { m: "Oct", h: 55 },
-              { m: "Nov", h: 62 },
-              { m: "Dec", h: 78 },
-              { m: "Jan", h: 70 },
-              { m: "Feb", h: 82 },
-              { m: "Mar", h: 95 },
-            ].map(({ m, h }) => (
-              <div className="bar-col" key={m}>
-                <div
-                  className="bar"
-                  style={{ height: `${h}%` }}
-                  title={`${m}: ${h}%`}
-                />
-                <span className="bar-month">{m}</span>
-              </div>
-            ))}
-          </div>
+          {revenue.map(({ month, value }) => (
+            <div className="bar-col" key={month}>
+              <div
+                className="bar"
+                style={{ height: `${value}%` }}
+                title={`${month}: ${value}`}
+              />
+              <span className="bar-month">{month}</span>
+            </div>
+          ))}
         </div>
 
         <div className="card-block">
@@ -316,7 +314,7 @@ export default function AdminDashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {RECENT_USERS.map((u) => (
+            {users.map((u) => (
               <tr key={u.id}>
                 <td className="td-name">{u.name ?? "—"}</td>
                 <td className="td-email">{u.email}</td>
@@ -324,13 +322,13 @@ export default function AdminDashboardPage() {
                   <Badge value={u.role} />
                 </td>
                 <td>
-                  {u.plan ? (
-                    <Badge value={u.plan} />
+                  {u.subscription?.plan ? (
+                    <Badge value={u.subscription.plan} />
                   ) : (
                     <span style={{ color: "var(--slate)" }}>Free</span>
                   )}
                 </td>
-                <td>{u.createdAt}</td>
+                <td>{new Date(u.createdAt).toLocaleDateString()}</td>
               </tr>
             ))}
           </tbody>
