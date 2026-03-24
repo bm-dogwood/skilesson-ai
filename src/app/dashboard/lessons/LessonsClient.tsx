@@ -13,10 +13,12 @@ import {
   X,
   ChevronDown,
   BookOpen,
-  Star,
   TrendingUp,
   Sparkles,
   Mountain,
+  LayoutGrid,
+  List,
+  Award,
 } from "lucide-react";
 
 type Lesson = {
@@ -28,7 +30,6 @@ type Lesson = {
   thumbnailUrl?: string;
   duration?: number;
   createdAt: string;
-
   progress?: {
     timestamp?: number;
     status?: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
@@ -46,6 +47,9 @@ const sportIcons = {
   Snowboarding: TrendingUp,
 };
 
+type ViewMode = "grid" | "list";
+type CompletionFilter = "All" | "Completed" | "In Progress" | "Not Started";
+
 export default function LessonsClient() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,16 +58,24 @@ export default function LessonsClient() {
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState("All");
   const [sportFilter, setSportFilter] = useState("All");
+  const [completionFilter, setCompletionFilter] =
+    useState<CompletionFilter>("All");
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+
   const getProgressPercent = (lesson: Lesson) => {
     const p = lesson.progress?.[0];
-
     if (!p || !lesson.duration) return 0;
-
     return Math.min(
       100,
       Math.round(((p.timestamp || 0) / lesson.duration) * 100)
     );
+  };
+
+  const getStatus = (lesson: Lesson) => {
+    const p = lesson.progress?.[0];
+    if (!p) return "NOT_STARTED";
+    return p.status || "NOT_STARTED";
   };
 
   useEffect(() => {
@@ -71,7 +83,6 @@ export default function LessonsClient() {
       try {
         const res = await fetch("/api/lessons-user");
         const data = await res.json();
-
         setLessons(data.lessons || []);
         setHasSubscription(data.hasSubscription);
       } catch (err) {
@@ -80,27 +91,47 @@ export default function LessonsClient() {
         setLoading(false);
       }
     };
-
     fetchLessons();
   }, []);
 
   const filtered = useMemo(() => {
     return lessons.filter((l) => {
+      // Search filter
       if (search && !l.title.toLowerCase().includes(search.toLowerCase()))
         return false;
 
+      // Level filter
       if (levelFilter !== "All" && l.level !== levelFilter) return false;
+
+      // Sport filter
       if (sportFilter !== "All" && l.sport !== sportFilter) return false;
+
+      // Completion filter
+      if (completionFilter !== "All") {
+        const status = getStatus(l);
+        if (completionFilter === "Completed" && status !== "COMPLETED")
+          return false;
+        if (completionFilter === "In Progress" && status !== "IN_PROGRESS")
+          return false;
+        if (completionFilter === "Not Started" && status !== "NOT_STARTED")
+          return false;
+      }
 
       return true;
     });
-  }, [lessons, search, levelFilter, sportFilter]);
+  }, [lessons, search, levelFilter, sportFilter, completionFilter]);
 
   const resetFilters = () => {
     setSearch("");
     setLevelFilter("All");
     setSportFilter("All");
+    setCompletionFilter("All");
   };
+
+  const continueWatching = lessons.filter((l) => {
+    const p = l.progress?.[0];
+    return p && p.timestamp && p.timestamp > 5 && p.status !== "COMPLETED";
+  });
 
   if (loading) {
     return (
@@ -148,10 +179,7 @@ export default function LessonsClient() {
       </div>
     );
   }
-  const continueWatching = lessons.filter((l) => {
-    const p = l.progress?.[0];
-    return p && p.timestamp && p.timestamp > 5 && p.status !== "COMPLETED";
-  });
+
   return (
     <div className="space-y-8">
       {/* Header Section */}
@@ -171,6 +199,30 @@ export default function LessonsClient() {
         </div>
 
         <div className="flex gap-2">
+          {/* View Toggle */}
+          <div className="flex bg-[#1e293b] rounded-xl p-1">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-2 rounded-lg transition-all ${
+                viewMode === "grid"
+                  ? "bg-ice text-black"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-2 rounded-lg transition-all ${
+                viewMode === "list"
+                  ? "bg-ice text-black"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -236,12 +288,12 @@ export default function LessonsClient() {
                 </button>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm text-slate-400 mb-2 block">
                     Difficulty Level
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {["All", "Beginner", "Intermediate", "Advanced"].map(
                       (level) => (
                         <button
@@ -264,7 +316,7 @@ export default function LessonsClient() {
                   <label className="text-sm text-slate-400 mb-2 block">
                     Sport Type
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {["All", "Skiing", "Snowboarding"].map((sport) => (
                       <button
                         key={sport}
@@ -280,37 +332,63 @@ export default function LessonsClient() {
                     ))}
                   </div>
                 </div>
+
+                <div>
+                  <label className="text-sm text-slate-400 mb-2 block">
+                    Progress Status
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {["All", "Completed", "In Progress", "Not Started"].map(
+                      (status) => (
+                        <button
+                          key={status}
+                          onClick={() =>
+                            setCompletionFilter(status as CompletionFilter)
+                          }
+                          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                            completionFilter === status
+                              ? "bg-ice text-black font-medium"
+                              : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                          }`}
+                        >
+                          {status}
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Continue Watching Section */}
       {continueWatching.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-xl font-bold text-white">Continue Watching</h2>
-
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {continueWatching.map((lesson) => {
               const percent = getProgressPercent(lesson);
-
               return (
                 <Link key={lesson.id} href={`/dashboard/lessons/${lesson.id}`}>
-                  <div className="bg-[#1e293b] rounded-xl overflow-hidden">
+                  <motion.div
+                    whileHover={{ y: -2 }}
+                    className="bg-[#1e293b] rounded-xl overflow-hidden"
+                  >
                     <div className="relative h-40">
                       <img
-                        src={lesson.thumbnailUrl}
+                        src={lesson.thumbnailUrl || "/placeholder.jpg"}
+                        alt={lesson.title}
                         className="w-full h-full object-cover"
                       />
-
-                      {/* 🔥 Progress bar */}
                       <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
                         <div
-                          className="h-full bg-ice"
+                          className="h-full bg-ice transition-all"
                           style={{ width: `${percent}%` }}
                         />
                       </div>
                     </div>
-
                     <div className="p-4">
                       <h3 className="text-white font-semibold">
                         {lesson.title}
@@ -319,14 +397,15 @@ export default function LessonsClient() {
                         {percent}% watched
                       </p>
                     </div>
-                  </div>
+                  </motion.div>
                 </Link>
               );
             })}
           </div>
         </div>
       )}
-      {/* Lessons Grid */}
+
+      {/* Lessons Grid/List View */}
       {filtered.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
@@ -348,10 +427,14 @@ export default function LessonsClient() {
             Clear filters
           </button>
         </motion.div>
-      ) : (
+      ) : viewMode === "grid" ? (
+        // Grid View
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((lesson, i) => {
             const SportIcon = sportIcons[lesson.sport];
+            const status = getStatus(lesson);
+            const percent = getProgressPercent(lesson);
+
             return (
               <Link key={lesson.id} href={`/dashboard/lessons/${lesson.id}`}>
                 <motion.div
@@ -375,19 +458,44 @@ export default function LessonsClient() {
                         </div>
                       )}
 
-                      {/* 🔥 PROGRESS BAR */}
-                      {lesson.progress?.[0] && (
+                      {/* Progress Bar */}
+                      {percent > 0 && (
                         <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
                           <div
-                            className="h-full bg-ice"
-                            style={{
-                              width: `${getProgressPercent(lesson)}%`,
-                            }}
+                            className="h-full bg-ice transition-all"
+                            style={{ width: `${percent}%` }}
                           />
                         </div>
                       )}
 
-                      {/* Overlay */}
+                      {/* Status Badge */}
+                      <div className="absolute top-3 right-3">
+                        {status === "COMPLETED" && (
+                          <div className="flex items-center gap-1 bg-green-500/20 backdrop-blur-sm px-2 py-1 rounded-lg text-green-400 text-xs">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Completed
+                          </div>
+                        )}
+                        {status === "IN_PROGRESS" && (
+                          <div className="flex items-center gap-1 bg-blue-500/20 backdrop-blur-sm px-2 py-1 rounded-lg text-blue-400 text-xs">
+                            <PlayCircle className="w-3 h-3" />
+                            In Progress
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Level Badge */}
+                      <div className="absolute top-3 left-3">
+                        <span
+                          className={`px-2 py-1 rounded-lg text-xs font-medium border backdrop-blur-sm ${
+                            levelColors[lesson.level]
+                          }`}
+                        >
+                          {lesson.level}
+                        </span>
+                      </div>
+
+                      {/* Hover Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="absolute bottom-4 left-4 right-4">
                           <div className="flex items-center gap-2 text-white">
@@ -396,25 +504,8 @@ export default function LessonsClient() {
                           </div>
                         </div>
                       </div>
-                      {lesson.progress?.[0]?.status === "COMPLETED" && (
-                        <div className="flex items-center gap-1 text-green-400 text-xs mt-2">
-                          <CheckCircle2 className="w-4 h-4" />
-                          Completed
-                        </div>
-                      )}
-                      {/* Level Badge */}
-                      <div className="absolute top-3 left-3">
-                        <span
-                          className={`px-2 py-1 rounded-lg text-xs font-medium border ${
-                            levelColors[lesson.level]
-                          }`}
-                        >
-                          {lesson.level}
-                        </span>
-                      </div>
                     </div>
 
-                    {/* Content */}
                     <div className="p-5">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -441,6 +532,115 @@ export default function LessonsClient() {
                         {lesson.description ||
                           "Learn essential techniques and improve your skills with this comprehensive lesson."}
                       </p>
+                    </div>
+                  </div>
+                </motion.div>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        // List View
+        <div className="space-y-3">
+          {filtered.map((lesson, i) => {
+            const SportIcon = sportIcons[lesson.sport];
+            const status = getStatus(lesson);
+            const percent = getProgressPercent(lesson);
+
+            return (
+              <Link key={lesson.id} href={`/dashboard/lessons/${lesson.id}`}>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  whileHover={{ x: 4 }}
+                  className="bg-[#1e293b] rounded-xl overflow-hidden hover:shadow-xl hover:shadow-ice/5 transition-all"
+                >
+                  <div className="flex gap-4 p-4">
+                    {/* Thumbnail */}
+                    <div className="relative w-32 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                      {lesson.thumbnailUrl ? (
+                        <img
+                          src={lesson.thumbnailUrl}
+                          alt={lesson.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
+                          <Mountain className="w-6 h-6 text-slate-600" />
+                        </div>
+                      )}
+                      {percent > 0 && (
+                        <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
+                          <div
+                            className="h-full bg-ice"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span
+                          className={`px-2 py-0.5 rounded-lg text-xs font-medium ${
+                            levelColors[lesson.level]
+                          }`}
+                        >
+                          {lesson.level}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {SportIcon && (
+                            <SportIcon className="w-3 h-3 text-ice" />
+                          )}
+                          <span className="text-xs text-slate-400">
+                            {lesson.sport}
+                          </span>
+                        </div>
+                        {lesson.duration && (
+                          <div className="flex items-center gap-1 text-xs text-slate-500">
+                            <Clock className="w-3 h-3" />
+                            <span>{lesson.duration} min</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <h3 className="text-white font-semibold mb-1 group-hover:text-ice transition-colors">
+                        {lesson.title}
+                      </h3>
+
+                      <p className="text-slate-400 text-sm line-clamp-1">
+                        {lesson.description ||
+                          "Learn essential techniques and improve your skills."}
+                      </p>
+
+                      {/* Status Indicator */}
+                      <div className="flex items-center gap-3 mt-2">
+                        {status === "COMPLETED" && (
+                          <div className="flex items-center gap-1 text-green-400 text-xs">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Completed
+                          </div>
+                        )}
+                        {status === "IN_PROGRESS" && (
+                          <div className="flex items-center gap-1 text-blue-400 text-xs">
+                            <PlayCircle className="w-3 h-3" />
+                            {percent}% complete
+                          </div>
+                        )}
+                        {status === "NOT_STARTED" && (
+                          <div className="flex items-center gap-1 text-slate-400 text-xs">
+                            <PlayCircle className="w-3 h-3" />
+                            Not started
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action */}
+                    <div className="flex items-center">
+                      <PlayCircle className="w-5 h-5 text-slate-500 group-hover:text-ice transition-colors" />
                     </div>
                   </div>
                 </motion.div>

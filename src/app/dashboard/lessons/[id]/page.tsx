@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
@@ -16,8 +16,6 @@ import {
   BookOpen,
   Lightbulb,
 } from "lucide-react";
-import { useRef } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 
 interface LessonData {
   id: string;
@@ -30,6 +28,9 @@ interface LessonData {
   takeaways: string[];
   coachTip: string;
   completed: boolean;
+  playbackId?: string;
+  thumbnailUrl?: string;
+  sport?: string;
 }
 
 const upNextLessons = [
@@ -62,7 +63,9 @@ export default function LessonDetailPage() {
   const [notes, setNotes] = useState("");
   const [isCompleted, setIsCompleted] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
+  const [watchedPercentage, setWatchedPercentage] = useState(0);
 
+  // Fetch lesson data
   useEffect(() => {
     const fetchLesson = async () => {
       try {
@@ -71,6 +74,7 @@ export default function LessonDetailPage() {
 
         if (data.success) {
           setLesson(data.lesson);
+          setIsCompleted(data.lesson.completed || false);
         }
       } catch (err) {
         console.error(err);
@@ -82,6 +86,7 @@ export default function LessonDetailPage() {
     if (lessonId) fetchLesson();
   }, [lessonId]);
 
+  // Restore video timestamp from progress
   useEffect(() => {
     if (!lesson?.progress?.[0] || !videoRef.current) return;
 
@@ -98,86 +103,131 @@ export default function LessonDetailPage() {
     };
   }, [lesson]);
 
+  // Save progress every 5 seconds
   useEffect(() => {
     if (!lesson) return;
 
     const interval = setInterval(() => {
       if (videoRef.current) {
+        const currentTime = videoRef.current.currentTime;
+        const status = isCompleted ? "COMPLETED" : "IN_PROGRESS";
+
         fetch("/api/progress", {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
             lessonId: lesson.id,
-            timestamp: videoRef.current.currentTime,
+            timestamp: currentTime,
+            status,
           }),
         });
       }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [lesson]);
+  }, [lesson, isCompleted]);
+
+  // Handle video time updates
   const handleTimeUpdate = () => {
     if (!videoRef.current || !lesson?.duration) return;
 
     const current = videoRef.current.currentTime;
-    const duration = lesson.duration;
+    const duration = parseFloat(lesson.duration) * 60; // Convert minutes to seconds
 
-    if (current / duration > 0.9 && !isCompleted) {
-      fetch("/api/progress", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          lessonId: lesson.id,
-          status: "COMPLETED",
-        }),
-      });
+    if (duration) {
+      const percentage = (current / duration) * 100;
+      setWatchedPercentage(percentage);
 
-      setIsCompleted(true);
+      // Auto-complete at 90%
+      if (percentage > 90 && !isCompleted) {
+        markComplete("COMPLETED");
+      }
     }
   };
+
+  // Save progress on pause or end
   const saveProgress = () => {
     if (!videoRef.current) return;
 
     fetch("/api/progress", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         lessonId: lesson.id,
         timestamp: videoRef.current.currentTime,
+        status: isCompleted ? "COMPLETED" : "IN_PROGRESS",
       }),
     });
   };
-  const handleComplete = async () => {
-    const newStatus = isCompleted ? "IN_PROGRESS" : "COMPLETED";
 
-    setIsCompleted(!isCompleted); // optimistic update
+  // Central function to mark complete/incomplete
+  const markComplete = async (status: "COMPLETED" | "IN_PROGRESS") => {
+    setIsCompleted(status === "COMPLETED");
 
     await fetch("/api/progress", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         lessonId: lesson.id,
-        status: newStatus,
+        status,
+        timestamp: videoRef.current?.currentTime || 0,
       }),
     });
   };
-  useEffect(() => {
-    if (lesson) {
-      setIsCompleted(lesson.completed || false);
-    }
-  }, [lesson]);
+
+  // Manual toggle completion
+  const handleComplete = () => {
+    const newStatus = isCompleted ? "IN_PROGRESS" : "COMPLETED";
+    markComplete(newStatus);
+  };
+
+  // Save notes
   const handleSaveNotes = () => {
+    // Save notes to localStorage or API
+    localStorage.setItem(`notes_${lessonId}`, notes);
     setNotesSaved(true);
     setTimeout(() => setNotesSaved(false), 2000);
   };
 
+  // Load saved notes
+  useEffect(() => {
+    const savedNotes = localStorage.getItem(`notes_${lessonId}`);
+    if (savedNotes) {
+      setNotes(savedNotes);
+    }
+  }, [lessonId]);
+
   const nextId = String(Number(lessonId) + 1);
+  const prevId = String(Number(lessonId) - 1);
+
   if (loading) {
-    return <p className="text-slate-400">Loading lesson...</p>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-ice"></div>
+      </div>
+    );
   }
 
   if (!lesson) {
-    return <p className="text-red-400">Lesson not found</p>;
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-400">Lesson not found</p>
+        <Link
+          href="/dashboard/lessons"
+          className="text-ice hover:underline mt-4 inline-block"
+        >
+          Back to Lessons
+        </Link>
+      </div>
+    );
   }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -209,33 +259,46 @@ export default function LessonDetailPage() {
             Lessons
           </Link>
           <ChevronRight className="w-3 h-3" />
-          <span className="text-slate-400">{lesson.sport}</span>
+          <span className="text-slate-400">{lesson.sport || "Sports"}</span>
           <ChevronRight className="w-3 h-3" />
-          <span className="text-snow">{lesson.title}</span>
+          <span className="text-snow truncate max-w-[200px]">
+            {lesson.title}
+          </span>
         </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Video Player Placeholder */}
+          {/* Video Player */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="relative aspect-video rounded-2xl bg-gradient-to-br from-[#1e293b] via-[#162033] to-[#0c1a2e] border border-white/[0.06] overflow-hidden flex items-center justify-center"
+            className="relative rounded-2xl bg-gradient-to-br from-[#1e293b] via-[#162033] to-[#0c1a2e] border border-white/[0.06] overflow-hidden"
           >
-            <div className="relative aspect-video rounded-2xl overflow-hidden bg-black">
+            <div className="relative aspect-video bg-black">
               {lesson.playbackId ? (
-                <video
-                  ref={videoRef}
-                  src={`https://stream.mux.com/${lesson.playbackId}.m3u8`}
-                  controls
-                  onPause={saveProgress}
-                  onEnded={saveProgress}
-                  onTimeUpdate={handleTimeUpdate}
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  <video
+                    ref={videoRef}
+                    src={`https://stream.mux.com/${lesson.playbackId}.m3u8`}
+                    controls
+                    onPause={saveProgress}
+                    onEnded={saveProgress}
+                    onTimeUpdate={handleTimeUpdate}
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Progress bar */}
+                  {watchedPercentage > 0 && watchedPercentage < 100 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+                      <div
+                        className="h-full bg-ice transition-all duration-300"
+                        style={{ width: `${watchedPercentage}%` }}
+                      />
+                    </div>
+                  )}
+                </>
               ) : lesson.thumbnailUrl ? (
                 <img
                   src={lesson.thumbnailUrl}
@@ -254,15 +317,21 @@ export default function LessonDetailPage() {
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
               <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-xs font-semibold border border-green-500/20">
-                {lesson.level}
+                {lesson.level || "Beginner"}
               </span>
               <span className="px-3 py-1 rounded-full bg-white/[0.04] text-slate-300 text-xs font-medium border border-white/[0.06]">
-                {lesson.sport}
+                {lesson.sport || "General"}
               </span>
               <span className="flex items-center gap-1 text-xs text-slate-400">
                 <Clock className="w-3.5 h-3.5" />
                 {lesson.duration ? `${lesson.duration} min` : "—"}
               </span>
+              {isCompleted && (
+                <span className="flex items-center gap-1 text-xs text-green-400">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Completed
+                </span>
+              )}
             </div>
 
             <h1 className="text-2xl md:text-3xl font-heading font-bold text-snow">
@@ -288,16 +357,29 @@ export default function LessonDetailPage() {
               </h2>
             </div>
             <ul className="space-y-3">
-              <li className="text-sm text-slate-300">
-                • Practice regularly to improve your technique
-              </li>
-              <li className="text-sm text-slate-300">
-                • Focus on balance and control
-              </li>
+              {lesson.takeaways && lesson.takeaways.length > 0 ? (
+                lesson.takeaways.map((takeaway: string, idx: number) => (
+                  <li key={idx} className="text-sm text-slate-300">
+                    • {takeaway}
+                  </li>
+                ))
+              ) : (
+                <>
+                  <li className="text-sm text-slate-300">
+                    • Practice regularly to improve your technique
+                  </li>
+                  <li className="text-sm text-slate-300">
+                    • Focus on balance and control
+                  </li>
+                  <li className="text-sm text-slate-300">
+                    • Review the video multiple times for better retention
+                  </li>
+                </>
+              )}
             </ul>
           </motion.div>
 
-          {/* Mark Complete */}
+          {/* Mark Complete Button */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -305,25 +387,33 @@ export default function LessonDetailPage() {
             className={`w-full py-3.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all ${
               isCompleted
                 ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                : "bg-gradient-to-r from-ice to-powder text-navy shadow-lg shadow-ice/20"
+                : "bg-gradient-to-r from-ice to-powder text-navy shadow-lg shadow-ice/20 hover:shadow-xl"
             }`}
           >
             <CheckCircle2 className="w-5 h-5" />
             {isCompleted ? "Completed" : "Mark as Complete"}
           </motion.button>
 
-          {/* Prev / Next */}
+          {/* Prev / Next Navigation */}
           <div className="flex items-center justify-between pt-2">
-            <Link href="/dashboard/lessons">← Back to Lessons</Link>
+            <Link
+              href={
+                prevId !== "0"
+                  ? `/dashboard/lessons/${prevId}`
+                  : "/dashboard/lessons"
+              }
+              className="flex items-center gap-2 text-sm text-slate-400 hover:text-ice transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Previous Lesson
+            </Link>
 
-            <Link href={`/dashboard/lessons/${nextId}`}>
-              <motion.div
-                whileHover={{ x: 2 }}
-                className="flex items-center gap-2 text-sm text-slate-400 hover:text-ice transition-colors"
-              >
-                Next Lesson
-                <ChevronRight className="w-4 h-4" />
-              </motion.div>
+            <Link
+              href={`/dashboard/lessons/${nextId}`}
+              className="flex items-center gap-2 text-sm text-slate-400 hover:text-ice transition-colors"
+            >
+              Next Lesson
+              <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -381,8 +471,8 @@ export default function LessonDetailPage() {
               </h3>
             </div>
             <p className="text-sm text-slate-300 leading-relaxed">
-              Stay consistent — small improvements each session make a big
-              difference.
+              {lesson.coachTip ||
+                "Stay consistent — small improvements each session make a big difference. Focus on quality over quantity, and don't forget to review key concepts regularly."}
             </p>
           </motion.div>
 
