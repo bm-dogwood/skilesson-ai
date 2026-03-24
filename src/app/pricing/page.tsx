@@ -139,7 +139,7 @@ export default function PricingPage() {
       try {
         const res = await fetch("/api/packages");
         const data = await res.json();
-        setPlans(data);
+        setPlans(data.packages || []);
       } catch (error) {
         console.error("Failed to fetch packages:", error);
       }
