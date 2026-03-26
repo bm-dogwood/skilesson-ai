@@ -19,6 +19,154 @@ interface HistoryItem {
 
 type SortOption = "newest" | "oldest" | "status";
 
+// Helper function to detect and format JSON feedback
+const formatFeedback = (feedback: string) => {
+  if (!feedback) return null;
+
+  // Try to parse as JSON
+  try {
+    const parsed = JSON.parse(feedback);
+
+    // If it's an object, format it nicely
+    if (typeof parsed === "object" && parsed !== null) {
+      return (
+        <div className="space-y-4">
+          {/* Positive Feedback */}
+          {parsed.positive && (
+            <div className="bg-green-500/10 border-l-4 border-green-500 p-4 rounded-r-lg">
+              <p className="text-green-400 font-semibold text-sm uppercase tracking-wide mb-1">
+                ✓ What you're doing well
+              </p>
+              <p className="text-gray-300">{parsed.positive}</p>
+            </div>
+          )}
+
+          {/* Correction */}
+          {parsed.correction && (
+            <div className="bg-yellow-500/10 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+              <p className="text-yellow-400 font-semibold text-sm uppercase tracking-wide mb-1">
+                ⚠ Area for Improvement
+              </p>
+              <p className="text-gray-300">{parsed.correction}</p>
+            </div>
+          )}
+
+          {/* How to Fix */}
+          {parsed.fix && (
+            <div className="bg-blue-500/10 border-l-4 border-blue-500 p-4 rounded-r-lg">
+              <p className="text-blue-400 font-semibold text-sm uppercase tracking-wide mb-1">
+                🔧 How to Fix
+              </p>
+              <p className="text-gray-300">{parsed.fix}</p>
+            </div>
+          )}
+
+          {/* Why It Matters */}
+          {parsed.why && (
+            <div className="bg-purple-500/10 border-l-4 border-purple-500 p-4 rounded-r-lg">
+              <p className="text-purple-400 font-semibold text-sm uppercase tracking-wide mb-1">
+                💡 Why It Matters
+              </p>
+              <p className="text-gray-300">{parsed.why}</p>
+            </div>
+          )}
+
+          {/* Main Feedback */}
+          {parsed.aiFeedback && !parsed.positive && !parsed.correction && (
+            <p className="text-gray-300 leading-relaxed">{parsed.aiFeedback}</p>
+          )}
+
+          {/* Additional Fields */}
+          {parsed.lessons && parsed.lessons.length > 0 && (
+            <div className="bg-cyan-500/10 border-l-4 border-cyan-500 p-4 rounded-r-lg">
+              <p className="text-cyan-400 font-semibold text-sm uppercase tracking-wide mb-2">
+                🎯 Recommended Lessons
+              </p>
+              <ul className="space-y-1">
+                {parsed.lessons.map((lesson: string, idx: number) => (
+                  <li
+                    key={idx}
+                    className="text-gray-300 flex items-start gap-2"
+                  >
+                    <span className="text-cyan-400">•</span>
+                    <span>{lesson}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Tips */}
+          {parsed.tips && parsed.tips.length > 0 && (
+            <div className="bg-emerald-500/10 border-l-4 border-emerald-500 p-4 rounded-r-lg">
+              <p className="text-emerald-400 font-semibold text-sm uppercase tracking-wide mb-2">
+                💪 Pro Tips
+              </p>
+              <ul className="space-y-1">
+                {parsed.tips.map((tip: string, idx: number) => (
+                  <li
+                    key={idx}
+                    className="text-gray-300 flex items-start gap-2"
+                  >
+                    <span className="text-emerald-400">•</span>
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Common Mistakes */}
+          {parsed.mistakes && parsed.mistakes.length > 0 && (
+            <div className="bg-red-500/10 border-l-4 border-red-500 p-4 rounded-r-lg">
+              <p className="text-red-400 font-semibold text-sm uppercase tracking-wide mb-2">
+                ⚠️ Common Mistakes to Avoid
+              </p>
+              <ul className="space-y-1">
+                {parsed.mistakes.map((mistake: string, idx: number) => (
+                  <li
+                    key={idx}
+                    className="text-gray-300 flex items-start gap-2"
+                  >
+                    <span className="text-red-400">•</span>
+                    <span>{mistake}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Drill Suggestions */}
+          {parsed.drills && parsed.drills.length > 0 && (
+            <div className="bg-orange-500/10 border-l-4 border-orange-500 p-4 rounded-r-lg">
+              <p className="text-orange-400 font-semibold text-sm uppercase tracking-wide mb-2">
+                🏋️ Recommended Drills
+              </p>
+              <ul className="space-y-1">
+                {parsed.drills.map((drill: string, idx: number) => (
+                  <li
+                    key={idx}
+                    className="text-gray-300 flex items-start gap-2"
+                  >
+                    <span className="text-orange-400">•</span>
+                    <span>{drill}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      );
+    }
+  } catch (e) {
+    // Not JSON, return as plain text
+    return <p className="text-gray-300 leading-relaxed">{feedback}</p>;
+  }
+
+  // Fallback: return as plain text
+  return <p className="text-gray-300 leading-relaxed">{feedback}</p>;
+};
+
 export default function HistoryPage() {
   const [data, setData] = useState<HistoryItem[]>([]);
   const [filteredData, setFilteredData] = useState<HistoryItem[]>([]);
@@ -247,9 +395,9 @@ export default function HistoryPage() {
                       <span className="font-medium text-gray-300">
                         AI Analysis:
                       </span>
-                      <p className="text-gray-400 line-clamp-2">
-                        {item.aiFeedback}
-                      </p>
+                      <div className="text-gray-400 line-clamp-2">
+                        {formatFeedback(item.aiFeedback)}
+                      </div>
                     </div>
 
                     {item.instructorFeedback && (
@@ -257,9 +405,9 @@ export default function HistoryPage() {
                         <span className="font-medium text-emerald-400">
                           Instructor:
                         </span>
-                        <p className="text-gray-400 line-clamp-1">
-                          {item.instructorFeedback}
-                        </p>
+                        <div className="text-gray-400 line-clamp-1">
+                          {formatFeedback(item.instructorFeedback)}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -322,22 +470,21 @@ export default function HistoryPage() {
 
               {/* AI Feedback */}
               <div className="mt-6">
-                <h3 className="font-semibold text-lg text-white mb-2">
+                <h3 className="font-semibold text-lg text-white mb-3">
                   AI Feedback
                 </h3>
-                <p className="text-gray-300">{selectedItem.aiFeedback}</p>
+                {formatFeedback(selectedItem.aiFeedback)}
               </div>
 
               {/* Instructor Feedback */}
-              <div className="mt-6 p-4 bg-gray-800 rounded-lg border border-gray-700">
-                <h3 className="font-semibold text-lg text-white mb-2">
-                  Instructor Feedback
-                </h3>
-                <p className="text-gray-300">
-                  {selectedItem.instructorFeedback ||
-                    "Waiting for instructor feedback..."}
-                </p>
-              </div>
+              {selectedItem.instructorFeedback && (
+                <div className="mt-6 p-4 bg-gray-800 rounded-lg border border-gray-700">
+                  <h3 className="font-semibold text-lg text-white mb-3">
+                    Instructor Feedback
+                  </h3>
+                  {formatFeedback(selectedItem.instructorFeedback)}
+                </div>
+              )}
             </div>
           </div>
         </div>

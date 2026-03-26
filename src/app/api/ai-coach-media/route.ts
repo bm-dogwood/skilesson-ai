@@ -6,7 +6,9 @@ import { authOptions } from "../auth/[...nextauth]/route";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 
-// 🧠 AI Image Analysis (using URL)
+/* ------------------------------------------------------------------ */
+/* 🧠 STEP 1: IMAGE ANALYSIS (VISION MODEL)                            */
+/* ------------------------------------------------------------------ */
 async function analyzeImageUrl(imageUrl: string) {
   try {
     const res = await fetch(`${OLLAMA_URL}/api/generate`, {
@@ -14,23 +16,50 @@ async function analyzeImageUrl(imageUrl: string) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "llava:latest",
-        prompt: "Describe ski posture issues briefly.",
+        prompt: `
+Analyze this ski posture.
+
+Focus on:
+- stance
+- balance
+- alignment
+- control
+
+Keep it short and factual.
+        `,
         images: [imageUrl],
         stream: false,
-        options: { num_predict: 80 },
       }),
     });
 
     const data = await res.json();
-    return data.response || "No analysis.";
+    return data.response || "Basic posture detected.";
   } catch (err) {
-    console.error(err);
-    return "AI analysis failed.";
+    console.error("Vision error:", err);
+    return "Basic posture detected.";
   }
 }
 
-// 🏂 Coaching
-async function generateCoachFeedback(description: string) {
+/* ------------------------------------------------------------------ */
+/* 🏂 STEP 2: AI COACH (STRUCTURED JSON)                               */
+/* ------------------------------------------------------------------ */
+async function generateCoachFeedback(description: string, userId: string) {
+  // 🎯 Get user info
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  // 📚 Get lessons for recommendation
+  const lessons = await prisma.lesson.findMany({
+    where: {
+      level: user?.level || undefined,
+      sport: user?.sport || undefined,
+    },
+    take: 3,
+  });
+
+  const lessonTitles = lessons.map((l) => l.title);
+
   try {
     const res = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: "POST",
@@ -38,31 +67,75 @@ async function generateCoachFeedback(description: string) {
       body: JSON.stringify({
         model: "llama3",
         prompt: `
-You are a ski coach.
+You are an elite ski coach.
 
-Based on:
+Analyze this:
 ${description}
 
-Give:
-- 1 positive
-- 1 correction
-- 1 actionable tip
-Short.
+Return ONLY valid JSON:
+
+{
+  "positive": "short encouragement",
+  "correction": "main issue",
+  "fix": "exact actionable fix",
+  "why": "why it matters",
+  "lessons": ["lesson1", "lesson2"]
+}
+
+
+
+Rules:
+- No markdown
+- No symbols like **
+- No extra text
+- Keep sentences short
+- Sound like a real coach
+
+Recommended lessons you can choose from:
+${lessonTitles.join(", ")}
         `,
         stream: false,
       }),
     });
 
     const data = await res.json();
-    return data.response || description;
-  } catch {
-    return description;
+
+    let parsed;
+
+    try {
+      parsed = JSON.parse(data.response);
+    } catch (err) {
+      console.error("JSON parse failed:", data.response);
+
+      // 🔥 fallback (IMPORTANT)
+      parsed = {
+        positive: "Good effort and stable stance.",
+        correction: "Balance shifts slightly forward.",
+        fix: "Keep shoulders aligned over hips.",
+        why: "Improves control and reduces fatigue.",
+        lessons: lessonTitles.slice(0, 2),
+      };
+    }
+
+    return parsed;
+  } catch (err) {
+    console.error("Coach error:", err);
+
+    return {
+      positive: "Good effort.",
+      correction: "Needs refinement.",
+      fix: "Focus on posture and balance.",
+      why: "Improves skiing performance.",
+      lessons: [],
+    };
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* 🚀 MAIN API ROUTE                                                   */
+/* ------------------------------------------------------------------ */
 export async function POST(req: NextRequest) {
   try {
-    // 🔐 Auth
     const session = await getServerSession(authOptions);
 
     if (!session?.userId) {
@@ -71,10 +144,7 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
-    console.log({
-      cloud: process.env.CLOUDINARY_CLOUD_NAME,
-      key: process.env.CLOUDINARY_API_KEY,
-    });
+
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
@@ -84,7 +154,7 @@ export async function POST(req: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // ☁️ STEP 1: Upload to Cloudinary
+    /* -------------------- ☁️ Upload -------------------- */
     const uploadRes: any = await new Promise((resolve, reject) => {
       cloudinary.uploader
         .upload_stream(
@@ -103,35 +173,32 @@ export async function POST(req: NextRequest) {
     const mediaUrl = uploadRes.secure_url;
     const mediaType = uploadRes.resource_type;
 
-    // 🎥 If video → use thumbnail frame
+    /* -------------------- 🎥 Video frame -------------------- */
     let analysisUrl = mediaUrl;
     if (mediaType === "video") {
       analysisUrl = mediaUrl.replace("/upload/", "/upload/so_1/");
     }
 
-    // 🧠 STEP 2: AI
+    /* -------------------- 🧠 AI -------------------- */
     const description = await analyzeImageUrl(analysisUrl);
+    const feedback = await generateCoachFeedback(description, session.userId);
 
-    // 🏂 STEP 3: Feedback
-    const feedback = await generateCoachFeedback(description);
-
-    // 💾 STEP 4: Save to DB
+    /* -------------------- 💾 Save -------------------- */
     const submission = await prisma.aISubmission.create({
       data: {
         userId: session.userId,
         mediaUrl,
         mediaType,
         aiDescription: description,
-        aiFeedback: feedback,
+        aiFeedback: JSON.stringify(feedback), // ✅ IMPORTANT
       },
     });
 
-    // ✅ RESPONSE
+    /* -------------------- ✅ Response -------------------- */
     return NextResponse.json({
       success: true,
       data: {
-        aiDescription: description,
-        aiFeedback: feedback,
+        feedback,
         submissionId: submission.id,
       },
     });

@@ -15,10 +15,7 @@ export default function AICoachUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-  const [result, setResult] = useState<{
-    aiDescription: string;
-    aiFeedback: string;
-  } | null>(null);
+  const [result, setResult] = useState<any>(null);
   const [instructorFeedback, setInstructorFeedback] = useState("");
 
   const fallbackResponses = [
@@ -76,10 +73,7 @@ export default function AICoachUpload() {
         return;
       }
 
-      setResult({
-        aiDescription: data.data.aiDescription,
-        aiFeedback: data.data.aiFeedback,
-      });
+      setResult(data.data.feedback);
     } catch (err) {
       setResult(getRandomFallback());
     } finally {
@@ -286,6 +280,7 @@ export default function AICoachUpload() {
           </AnimatePresence>
 
           {/* Results */}
+          {/* Results */}
           <AnimatePresence>
             {result && !loading && (
               <motion.div
@@ -294,15 +289,112 @@ export default function AICoachUpload() {
                 exit={{ opacity: 0, y: -20 }}
                 className="mt-8 space-y-6"
               >
-                {/* AI Analysis */}
-                <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
-                  <div className="flex items-center gap-2 mb-4">
-                    <SparklesIcon className="w-5 h-5 text-gray-300" />
-                    <h2 className="font-semibold text-white">AI Analysis</h2>
+                {/* AI Coach Message - Chatbot Style */}
+                <div className="flex gap-3">
+                  <div className="flex-1 space-y-4">
+                    {/* Detailed Feedback Cards */}
+                    <div className="grid gap-3">
+                      {/* Positive Feedback */}
+                      {result.positive && (
+                        <div className="bg-gray-800/50 rounded-xl p-4 border-l-4 border-green-500">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1">
+                              <p className="text-green-400 font-semibold text-sm uppercase tracking-wide mb-1">
+                                What you're doing well
+                              </p>
+                              <p className="text-gray-300">{result.positive}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Correction */}
+                      {result.correction && (
+                        <div className="bg-gray-800/50 rounded-xl p-4 border-l-4 border-yellow-500">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1">
+                              <p className="text-yellow-400 font-semibold text-sm uppercase tracking-wide mb-1">
+                                Area for Improvement
+                              </p>
+                              <p className="text-gray-300">
+                                {result.correction}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* How to Fix */}
+                      {result.fix && (
+                        <div className="bg-gray-800/50 rounded-xl p-4 border-l-4 border-blue-500">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1">
+                              <p className="text-blue-400 font-semibold text-sm uppercase tracking-wide mb-1">
+                                How to Fix
+                              </p>
+                              <p className="text-gray-300">{result.fix}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Why It Matters */}
+                      {result.why && (
+                        <div className="bg-gray-800/50 rounded-xl p-4 border-l-4 border-purple-500">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-1">
+                              <p className="text-purple-400 font-semibold text-sm uppercase tracking-wide mb-1">
+                                Why It Matters
+                              </p>
+                              <p className="text-gray-300">{result.why}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Recommended Lessons */}
+                    {result.lessons?.length > 0 && (
+                      <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
+                        <div className="flex items-center gap-2 mb-3">
+                          <h3 className="font-semibold text-white">
+                            Recommended Lessons
+                          </h3>
+                        </div>
+                        <div className="space-y-2">
+                          {result.lessons.map((lesson: string, idx: number) => (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer group"
+                            >
+                              <span className="text-gray-500 text-sm">
+                                #{idx + 1}
+                              </span>
+                              <span className="text-gray-300 group-hover:text-white transition-colors">
+                                {lesson}
+                              </span>
+                              <span className="ml-auto text-gray-600 text-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                →
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-2 pt-2">
+                      <button className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-300 transition-colors border border-gray-700">
+                        Helpful
+                      </button>
+                      <button className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-300 transition-colors border border-gray-700">
+                        Ask for clarification
+                      </button>
+                      <button className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-300 transition-colors border border-gray-700">
+                        Save feedback
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-gray-300 leading-relaxed">
-                    {result.aiFeedback}
-                  </p>
                 </div>
 
                 {/* Instructor Feedback Section */}
@@ -313,16 +405,23 @@ export default function AICoachUpload() {
                       Instructor Feedback
                     </h2>
                   </div>
-                  <textarea
-                    value={instructorFeedback}
-                    onChange={(e) => setInstructorFeedback(e.target.value)}
-                    placeholder="Add your own feedback or notes..."
-                    className="w-full p-4 bg-gray-800 border border-gray-700 rounded-xl text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-transparent transition-all resize-none"
-                    rows={3}
-                  />
-                  <button className="mt-3 px-4 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 transition-all text-sm font-medium">
-                    Save Notes
-                  </button>
+                  <div className="space-y-3">
+                    <textarea
+                      value={instructorFeedback}
+                      onChange={(e) => setInstructorFeedback(e.target.value)}
+                      placeholder="Add your own feedback or notes..."
+                      className="w-full p-4 bg-gray-800 border border-gray-700 rounded-xl text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-transparent transition-all resize-none"
+                      rows={3}
+                    />
+                    <div className="flex gap-2">
+                      <button className="px-4 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 transition-all text-sm font-medium">
+                        Save Notes
+                      </button>
+                      <button className="px-4 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 transition-all text-sm font-medium">
+                        Request Expert Review
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}
