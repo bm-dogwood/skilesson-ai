@@ -27,12 +27,6 @@ const footerLinks = {
     { label: "Sign in", href: "/signin" },
     { label: "Pricing", href: "/pricing" },
   ],
-  legal: [
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
-    { label: "Cookie Policy", href: "/cookies" },
-    { label: "Accessibility", href: "/accessibility" },
-  ],
 };
 
 const socials = [
@@ -106,7 +100,7 @@ export default function Footer() {
         </div>
 
         {/* Link columns */}
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
           <div>
             <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-snow/40">
               Company
@@ -147,23 +141,6 @@ export default function Footer() {
             </h3>
             <ul className="space-y-3">
               {footerLinks.support.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-snow/50 transition-colors hover:text-snow"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-snow/40">
-              Legal
-            </h3>
-            <ul className="space-y-3">
-              {footerLinks.legal.map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
