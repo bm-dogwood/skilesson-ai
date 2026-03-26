@@ -1,31 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { Mountain, Instagram, Twitter, Youtube, Facebook, Send } from "lucide-react";
+import {
+  Mountain,
+  Instagram,
+  Twitter,
+  Youtube,
+  Facebook,
+  Send,
+} from "lucide-react";
 import { useState } from "react";
 
 const footerLinks = {
   company: [
     { label: "About Us", href: "/about" },
     { label: "Our Instructors", href: "/instructors" },
-    { label: "Careers", href: "/careers" },
-    { label: "Press", href: "/press" },
-    { label: "Blog", href: "/blog" },
   ],
   curriculum: [
-    { label: "Beginner Skiing", href: "/curriculum/beginner-ski" },
-    { label: "Beginner Snowboarding", href: "/curriculum/beginner-snowboard" },
-    { label: "Intermediate", href: "/curriculum/intermediate" },
-    { label: "Advanced & Racing", href: "/curriculum/advanced" },
-    { label: "Kids Programs", href: "/curriculum/kids" },
-    { label: "Family Plans", href: "/curriculum/family" },
+    { label: "Explorer", href: "/pricing" },
+    { label: "Summit", href: "/pricing" },
+    { label: "Apex", href: "/pricing" },
   ],
   support: [
-    { label: "Help Center", href: "/help" },
+    { label: "Home Page", href: "/" },
     { label: "Contact Us", href: "/contact" },
-    { label: "FAQs", href: "/faq" },
-    { label: "Equipment Guide", href: "/equipment" },
-    { label: "Gift Cards", href: "/gift-cards" },
+    { label: "Sign in", href: "/signin" },
+    { label: "Pricing", href: "/pricing" },
   ],
   legal: [
     { label: "Privacy Policy", href: "/privacy" },
@@ -36,10 +36,18 @@ const footerLinks = {
 };
 
 const socials = [
-  { icon: Instagram, href: "https://instagram.com/skilesson.ai", label: "Instagram" },
+  {
+    icon: Instagram,
+    href: "https://instagram.com/skilesson.ai",
+    label: "Instagram",
+  },
   { icon: Twitter, href: "https://twitter.com/skilessonai", label: "Twitter" },
   { icon: Youtube, href: "https://youtube.com/@skilessonai", label: "YouTube" },
-  { icon: Facebook, href: "https://facebook.com/skilessonai", label: "Facebook" },
+  {
+    icon: Facebook,
+    href: "https://facebook.com/skilessonai",
+    label: "Facebook",
+  },
 ];
 
 export default function Footer() {
@@ -58,9 +66,9 @@ export default function Footer() {
               </span>
             </Link>
             <p className="mt-3 text-sm leading-relaxed text-snow/50">
-              The premier online platform for ski and snowboard education.
-              Learn from world-class instructors, track your progress, and
-              hit the mountain with confidence.
+              The premier online platform for ski and snowboard education. Learn
+              from world-class instructors, track your progress, and hit the
+              mountain with confidence.
             </p>
           </div>
 

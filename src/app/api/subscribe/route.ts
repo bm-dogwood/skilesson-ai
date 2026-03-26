@@ -6,12 +6,15 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { userId, packageId, billingCycle, trialEnabled } = body;
+    const { userId, userEmail, packageId, billingCycle, trialEnabled } = body;
 
     // ✅ Validate
-    if (!userId || !packageId) {
+    if (!userId || !packageId || !userEmail) {
       return NextResponse.json(
-        { success: false, error: "userId and packageId are required." },
+        {
+          success: false,
+          error: "userId, userEmail and packageId are required.",
+        },
         { status: 400 }
       );
     }
@@ -44,6 +47,8 @@ export async function POST(request: NextRequest) {
     // ✅ Create checkout session
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
+
+      customer_email: userEmail,
       line_items: [
         {
           price: priceId,
@@ -61,7 +66,7 @@ export async function POST(request: NextRequest) {
       success_url: `${process.env.NEXT_PUBLIC_URL}/success`,
       cancel_url: `${process.env.NEXT_PUBLIC_URL}/pricing`,
     });
-
+    console.log(userEmail);
     return NextResponse.json({
       success: true,
       url: session.url,

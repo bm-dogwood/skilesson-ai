@@ -23,6 +23,8 @@ import {
   Heart,
   Zap,
 } from "lucide-react";
+import { useT } from "@/hooks/useT";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 /* ------------------------------------------------------------------ */
 /*  Reusable scroll-reveal wrapper                                     */
@@ -155,9 +157,12 @@ function MountainBackground() {
 /*  HERO SECTION                                                       */
 /* ------------------------------------------------------------------ */
 function Hero() {
+  const t = useT();
+
   return (
     <section className="relative flex min-h-screen items-center justify-center overflow-hidden">
       <MountainBackground />
+      <LanguageSwitcher />
 
       <div className="relative z-10 mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
         {/* Badge */}
@@ -169,7 +174,7 @@ function Hero() {
         >
           <Snowflake className="h-3.5 w-3.5 text-ice" />
           <span className="text-xs font-medium tracking-wide text-ice">
-            NOW IN EARLY ACCESS
+            {"NOW IN EARLY ACCESS"}
           </span>
         </motion.div>
 
@@ -180,9 +185,9 @@ function Hero() {
           transition={{ duration: 0.8, delay: 0.15 }}
           className="font-heading text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-6xl lg:text-7xl xl:text-8xl"
         >
-          <span className="gradient-text">Master the Mountain.</span>
+          <span className="gradient-text">{t.hero.title1}</span>
           <br />
-          <span className="text-snow/90">Before You Hit the Slopes.</span>
+          <span className="text-snow/90">{t.hero.title2}</span>
         </motion.h1>
 
         {/* Subheadline */}
@@ -192,9 +197,7 @@ function Hero() {
           transition={{ duration: 0.8, delay: 0.35 }}
           className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-snow/60 sm:text-xl"
         >
-          World-class ski and snowboard lessons you can take from home. Learn
-          technique, build confidence, and track your progress &mdash; so every
-          day on the mountain counts.
+          {t.hero.subtitle}
         </motion.p>
 
         {/* CTAs */}
@@ -208,7 +211,7 @@ function Hero() {
             href="/pricing"
             className="group flex items-center gap-2 rounded-full bg-ice px-8 py-4 text-base font-semibold text-navy shadow-lg shadow-ice/20 transition-all duration-200 hover:bg-powder hover:shadow-xl hover:shadow-ice/30"
           >
-            Start Your Journey
+            {t.hero.ctaPrimary}
             <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link
@@ -216,7 +219,7 @@ function Hero() {
             className="group flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-4 text-base font-medium text-snow/80 transition-all hover:border-white/20 hover:bg-white/10"
           >
             <Play className="h-4 w-4 text-ice" />
-            See How It Works
+            {t.hero.ctaSecondary}
           </Link>
         </motion.div>
 
@@ -227,8 +230,7 @@ function Hero() {
           transition={{ duration: 1, delay: 0.8 }}
           className="mt-8 text-xs tracking-wide text-snow/30"
         >
-          Free 7-day trial &middot; Cancel anytime &middot; No equipment needed
-          to start
+          {"Free 7-day trial · Cancel anytime · No equipment needed to start"}
         </motion.p>
       </div>
 
@@ -254,14 +256,16 @@ function Hero() {
 /* ------------------------------------------------------------------ */
 /*  SOCIAL PROOF / STATS                                               */
 /* ------------------------------------------------------------------ */
-const stats = [
-  { value: "10,000+", label: "Students Enrolled", icon: Users },
-  { value: "200+", label: "Expert Lessons", icon: BookOpen },
-  { value: "3", label: "Skill Levels", icon: Target },
-  { value: "50+", label: "Pro Instructors", icon: Award },
-];
-
 function Stats() {
+  const t = useT();
+
+  const stats = [
+    { value: "10,000+", label: t.stats.students, icon: Users },
+    { value: "200+", label: t.stats.lessons, icon: BookOpen },
+    { value: "3", label: t.stats.levels, icon: Target },
+    { value: "50+", label: t.stats.instructors, icon: Award },
+  ];
+
   return (
     <Section>
       <div className="grid grid-cols-2 gap-6 sm:gap-8 lg:grid-cols-4">
@@ -280,8 +284,9 @@ function Stats() {
 
       <Reveal delay={0.3}>
         <p className="mt-10 text-center text-sm text-snow/30">
-          Taught by Olympians, PSIA-certified instructors, and professional
-          athletes
+          {
+            "Taught by Olympians, PSIA-certified instructors, and professional athletes"
+          }
         </p>
       </Reveal>
     </Section>
@@ -291,44 +296,42 @@ function Stats() {
 /* ------------------------------------------------------------------ */
 /*  HOW IT WORKS                                                       */
 /* ------------------------------------------------------------------ */
-const steps = [
-  {
-    step: "01",
-    title: "Choose Your Level",
-    description:
-      "Whether you have never seen snow or you are chasing powder in the backcountry, our placement quiz matches you with the right curriculum in under two minutes.",
-    icon: Target,
-  },
-  {
-    step: "02",
-    title: "Learn From Pros",
-    description:
-      "Cinematic, studio-quality lessons taught by Olympic medalists and PSIA-certified instructors. Watch, practice, and replay on any device.",
-    icon: Play,
-  },
-  {
-    step: "03",
-    title: "Track Your Progress",
-    description:
-      "Earn skill badges, unlock new levels, and get AI-powered feedback on your form. See exactly where you stand and what to work on next.",
-    icon: TrendingUp,
-  },
-];
-
 function HowItWorks() {
+  const t = useT();
+
+  const steps = [
+    {
+      step: "01",
+      title: t.how.step1.title,
+      description: t.how.step1.desc,
+      icon: Target,
+    },
+    {
+      step: "02",
+      title: t.how.step2.title,
+      description: t.how.step2.desc,
+      icon: Play,
+    },
+    {
+      step: "03",
+      title: t.how.step3.title,
+      description: t.how.step3.desc,
+      icon: TrendingUp,
+    },
+  ];
+
   return (
     <Section id="how-it-works" dark>
       <Reveal>
         <div className="text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ice">
-            How It Works
+            {"How It Works"}
           </p>
           <h2 className="font-heading mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            Three steps to the summit
+            {t.how.heading}
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-base text-snow/50 sm:text-lg">
-            We took the best of in-person ski school and made it available
-            anywhere, anytime. No lift ticket required.
+            {t.how.sub}
           </p>
         </div>
       </Reveal>
@@ -412,20 +415,21 @@ const levels = [
 ];
 
 function Curriculum() {
+  const t = useT();
+
   return (
     <Section id="curriculum">
       <Reveal>
         <div className="text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ice">
-            Curriculum
+            {t.curriculum.badge || "Curriculum"}
           </p>
           <h2 className="font-heading mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            Every level. Every style. Every goal.
+            {t.curriculum.heading || "Every level. Every style. Every goal."}
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-base text-snow/50 sm:text-lg">
-            Our curriculum is designed by certified instructors and structured
-            for progression &mdash; whether you are clicking into skis for the
-            first time or looking to conquer double blacks.
+            {t.curriculum.sub ||
+              "Our curriculum is designed by certified instructors and structured for progression — whether you are clicking into skis for the first time or looking to conquer double blacks."}
           </p>
         </div>
       </Reveal>
@@ -468,82 +472,9 @@ function Curriculum() {
                 href="/pricing"
                 className="mt-8 inline-flex items-center gap-1 text-sm font-medium text-ice transition-colors hover:text-powder"
               >
-                Explore curriculum
+                {t.curriculum.exploreLink || "Explore curriculum"}
                 <ChevronRight className="h-3.5 w-3.5" />
               </Link>
-            </div>
-          </Reveal>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  TESTIMONIALS                                                       */
-/* ------------------------------------------------------------------ */
-const testimonials = [
-  {
-    quote:
-      "My 8-year-old watched the beginner series three times before our trip to Breckenridge. She skipped the bunny hill entirely and went straight to greens. The instructor couldn't believe it.",
-    name: "Sarah M.",
-    role: "Parent of two, Denver CO",
-    rating: 5,
-  },
-  {
-    quote:
-      "I've been skiing for 20 years and thought I had nothing left to learn. The intermediate carving module completely changed how I approach turns. My friends thought I'd taken a private lesson.",
-    name: "James T.",
-    role: "Recreational skier, Salt Lake City UT",
-    rating: 5,
-  },
-  {
-    quote:
-      "We bought the family plan and it was the best investment we made before our first ski trip. All four of us felt prepared and confident. Saved us hundreds on group lessons at the resort.",
-    name: "The Nguyen Family",
-    role: "First-time ski family, Austin TX",
-    rating: 5,
-  },
-  {
-    quote:
-      "As a snowboard instructor, I recommend this to all my students for pre-trip preparation. They show up with better fundamentals and I can actually teach them advanced skills instead of basics.",
-    name: "Tyler K.",
-    role: "AASI Certified Instructor, Vail CO",
-    rating: 5,
-  },
-];
-
-function Testimonials() {
-  return (
-    <Section dark>
-      <Reveal>
-        <div className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">
-            Testimonials
-          </p>
-          <h2 className="font-heading mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            Trusted by families and athletes alike
-          </h2>
-        </div>
-      </Reveal>
-
-      <div className="mt-16 grid gap-6 sm:mt-20 md:grid-cols-2">
-        {testimonials.map((t, i) => (
-          <Reveal key={t.name} delay={i * 0.1}>
-            <div className="glass glass-hover flex h-full flex-col rounded-2xl p-8 transition-all duration-300">
-              {/* Stars */}
-              <div className="mb-4 flex gap-1">
-                {Array.from({ length: t.rating }).map((_, j) => (
-                  <Star key={j} className="h-4 w-4 fill-gold text-gold" />
-                ))}
-              </div>
-              <p className="flex-1 text-sm leading-relaxed text-snow/70">
-                &ldquo;{t.quote}&rdquo;
-              </p>
-              <div className="mt-6 border-t border-white/5 pt-4">
-                <p className="text-sm font-semibold text-snow/90">{t.name}</p>
-                <p className="text-xs text-snow/40">{t.role}</p>
-              </div>
             </div>
           </Reveal>
         ))}
@@ -572,7 +503,7 @@ const familyFeatures = [
     icon: Heart,
     title: "Parent Dashboard",
     description:
-      "See what your kids are learning, how they are progressing, and what skills they have mastered &mdash; all from your phone.",
+      "See what your kids are learning, how they are progressing, and what skills they have mastered — all from your phone.",
   },
   {
     icon: Award,
@@ -583,6 +514,8 @@ const familyFeatures = [
 ];
 
 function BuiltForFamilies() {
+  const t = useT();
+
   return (
     <Section>
       <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
@@ -590,15 +523,14 @@ function BuiltForFamilies() {
         <div>
           <Reveal>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ice">
-              For Families
+              {t.families.badge || "For Families"}
             </p>
             <h2 className="font-heading mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-              Built for families who ride together
+              {t.families.heading || "Built for families who ride together"}
             </h2>
             <p className="mt-4 max-w-lg text-base leading-relaxed text-snow/50 sm:text-lg">
-              Skiing is a family sport. Our platform is designed from the ground
-              up to make learning fun, safe, and accessible for every member of
-              the family &mdash; from five-year-olds to grandparents.
+              {t.families.sub ||
+                "Skiing is a family sport. Our platform is designed from the ground up to make learning fun, safe, and accessible for every member of the family — from five-year-olds to grandparents."}
             </p>
           </Reveal>
           {/* Family skiing photo */}
@@ -641,30 +573,24 @@ function BuiltForFamilies() {
 /*  AI COACH TEASER                                                    */
 /* ------------------------------------------------------------------ */
 function AICoach() {
+  const t = useT();
+
   return (
     <Section dark>
       <div className="mx-auto max-w-4xl text-center">
-        <Reveal>
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-4 py-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-gold" />
-            <span className="text-xs font-medium tracking-wide text-gold">
-              COMING SOON
-            </span>
-          </div>
-        </Reveal>
-
         <Reveal delay={0.1}>
           <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            Your Personal{" "}
-            <span className="gradient-text-gold">AI Snow Coach</span>
+            {t.aiCoach.heading || "Your Personal "}
+            <span className="gradient-text-gold">
+              {t.aiCoach.highlight || "AI Snow Coach"}
+            </span>
           </h2>
         </Reveal>
 
         <Reveal delay={0.2}>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-snow/50 sm:text-lg">
-            Imagine a coach that knows exactly where you are in your journey,
-            adapts to your pace, answers your questions, and keeps you motivated
-            between lessons. That is what we are building.
+            {t.aiCoach.sub ||
+              "Imagine a coach that knows exactly where you are in your journey, adapts to your pace, answers your questions, and keeps you motivated between lessons. That is what we are building."}
           </p>
         </Reveal>
 
@@ -673,18 +599,24 @@ function AICoach() {
             {[
               {
                 icon: Brain,
-                title: "Adaptive Learning",
-                desc: "AI adjusts your lesson plan based on what you have mastered and where you need work.",
+                title: t.aiCoach.feature1Title || "Adaptive Learning",
+                desc:
+                  t.aiCoach.feature1Desc ||
+                  "AI adjusts your lesson plan based on what you have mastered and where you need work.",
               },
               {
                 icon: MessageCircle,
-                title: "Ask Anything",
-                desc: "Get instant answers to technique questions, gear advice, and mountain conditions.",
+                title: t.aiCoach.feature2Title || "Ask Anything",
+                desc:
+                  t.aiCoach.feature2Desc ||
+                  "Get instant answers to technique questions, gear advice, and mountain conditions.",
               },
               {
                 icon: BarChart3,
-                title: "Smart Progress",
-                desc: "AI-generated insights on your strengths, growth areas, and personalized next steps.",
+                title: t.aiCoach.feature3Title || "Smart Progress",
+                desc:
+                  t.aiCoach.feature3Desc ||
+                  "AI-generated insights on your strengths, growth areas, and personalized next steps.",
               },
             ].map((item, i) => (
               <div
@@ -709,7 +641,9 @@ function AICoach() {
 /*  INSTRUCTOR CREDIBILITY                                             */
 /* ------------------------------------------------------------------ */
 function Instructors() {
-  const credentials = [
+  const t = useT();
+
+  const credentials = t.instructors?.credentials || [
     "PSIA / AASI Certified Level III",
     "Olympic & World Cup Athletes",
     "20+ Years Average Teaching Experience",
@@ -735,10 +669,10 @@ function Instructors() {
             {/* Overlay content */}
             <div className="absolute bottom-0 left-0 right-0 p-8">
               <p className="font-heading text-lg font-bold text-snow/90">
-                Filmed on Location
+                {t.instructors.locationTitle || "Filmed on Location"}
               </p>
               <p className="mt-1 text-sm text-snow/60">
-                Vail, Aspen, Park City & more
+                {t.instructors.locations || "Vail, Aspen, Park City & more"}
               </p>
             </div>
           </div>
@@ -748,22 +682,20 @@ function Instructors() {
         <div>
           <Reveal>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ice">
-              Our Instructors
+              {t.instructors.badge || "Our Instructors"}
             </p>
             <h2 className="font-heading mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-              Learn from the best in the business
+              {t.instructors.heading || "Learn from the best in the business"}
             </h2>
             <p className="mt-4 max-w-lg text-base leading-relaxed text-snow/50 sm:text-lg">
-              Every lesson is taught by a certified professional with real
-              competition or resort experience. No amateurs. No shortcuts. The
-              same instructors who train at Vail, Aspen, and Park City are now
-              teaching you.
+              {t.instructors.sub ||
+                "Every lesson is taught by a certified professional with real competition or resort experience. No amateurs. No shortcuts. The same instructors who train at Vail, Aspen, and Park City are now teaching you."}
             </p>
           </Reveal>
 
           <Reveal delay={0.2}>
             <ul className="mt-8 space-y-3">
-              {credentials.map((cred) => (
+              {credentials.map((cred: string) => (
                 <li
                   key={cred}
                   className="flex items-center gap-3 text-sm text-snow/60"
@@ -786,6 +718,8 @@ function Instructors() {
 /*  FINAL CTA                                                          */
 /* ------------------------------------------------------------------ */
 function FinalCTA() {
+  const t = useT();
+
   return (
     <Section>
       <Reveal>
@@ -797,13 +731,10 @@ function FinalCTA() {
 
           <div className="relative px-8 py-16 text-center sm:px-16 sm:py-24">
             <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-              Ready to{" "}
-              <span className="gradient-text">Master the Mountain</span>?
+              {t.cta.title}
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-snow/50 sm:text-lg">
-              Join thousands of students who showed up to the mountain prepared,
-              confident, and ready to ride. Your journey starts with a single
-              click.
+              {t.cta.subtitle}
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -811,19 +742,20 @@ function FinalCTA() {
                 href="/pricing"
                 className="group flex items-center gap-2 rounded-full bg-ice px-8 py-4 text-base font-semibold text-navy shadow-lg shadow-ice/20 transition-all duration-200 hover:bg-powder hover:shadow-xl hover:shadow-ice/30"
               >
-                Start Your Free Trial
+                {t.cta.button}
                 <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link
                 href="/pricing"
                 className="text-sm font-medium text-snow/50 transition-colors hover:text-snow"
               >
-                View pricing &rarr;
+                {t.ctaa.secondaryLink || "View pricing →"}
               </Link>
             </div>
 
             <p className="mt-6 text-xs text-snow/30">
-              7 days free &middot; From $14.99/mo &middot; Cancel anytime
+              {t.ctaa.finePrint ||
+                "7 days free · From $14.99/mo · Cancel anytime"}
             </p>
           </div>
         </div>
@@ -843,7 +775,6 @@ export default function Home() {
       <HowItWorks />
       <Curriculum />
       <Instructors />
-      <Testimonials />
       <BuiltForFamilies />
       <AICoach />
       <FinalCTA />

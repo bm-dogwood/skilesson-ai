@@ -165,6 +165,7 @@ export default function PricingPage() {
         body: JSON.stringify({
           userId: session.userId,
           packageId: plan.id,
+          userEmail: session.user.email,
           billingCycle: isAnnual ? "annual" : "monthly",
           trialEnabled: true,
         }),

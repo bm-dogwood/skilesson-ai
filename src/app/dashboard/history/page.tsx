@@ -248,7 +248,7 @@ export default function HistoryPage() {
                         AI Analysis:
                       </span>
                       <p className="text-gray-400 line-clamp-2">
-                        {item.aiDescription}
+                        {item.aiFeedback}
                       </p>
                     </div>
 
@@ -318,14 +318,6 @@ export default function HistoryPage() {
                 <span className="text-sm text-gray-400">
                   {new Date(selectedItem.createdAt).toLocaleString()}
                 </span>
-              </div>
-
-              {/* AI Analysis */}
-              <div className="mt-6">
-                <h3 className="font-semibold text-lg text-white mb-2">
-                  AI Analysis
-                </h3>
-                <p className="text-gray-300">{selectedItem.aiDescription}</p>
               </div>
 
               {/* AI Feedback */}

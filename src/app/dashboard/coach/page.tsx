@@ -47,11 +47,13 @@ export default function AICoachUpload() {
         "Try to keep more pressure on your downhill ski and stay forward. This will help with carving and smoother turns.",
     },
   ];
+
   const getRandomFallback = () => {
     return fallbackResponses[
       Math.floor(Math.random() * fallbackResponses.length)
     ];
   };
+
   const handleUpload = async () => {
     if (!file) return;
 
@@ -115,7 +117,7 @@ export default function AICoachUpload() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-navy-900 to-slate-900 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-black flex items-center justify-center p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -128,12 +130,12 @@ export default function AICoachUpload() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="inline-block p-3 bg-navy-800 rounded-2xl mb-4"
+            className="inline-block p-3 bg-gray-800 rounded-2xl mb-4"
           >
-            <AcademicCapIcon className="w-8 h-8 text-cyan-400" />
+            <AcademicCapIcon className="w-8 h-8 text-gray-200" />
           </motion.div>
           <h1 className="text-4xl font-bold text-white mb-2">AI Ski Coach</h1>
-          <p className="text-slate-400">
+          <p className="text-gray-400">
             Upload your skiing video or photo for instant AI-powered analysis
           </p>
         </div>
@@ -145,18 +147,15 @@ export default function AICoachUpload() {
           onDragOver={handleDrag}
           onDrop={handleDrop}
           className={`
-            relative bg-navy-800/50 backdrop-blur-xl rounded-3xl p-8 
+            relative bg-gray-900 rounded-3xl p-8 
             border-2 transition-all duration-300
             ${
               dragActive
-                ? "border-cyan-400 bg-navy-800/70 shadow-lg shadow-cyan-500/20"
-                : "border-navy-700 hover:border-navy-600"
+                ? "border-gray-600 bg-gray-800 shadow-lg shadow-gray-700/20"
+                : "border-gray-800 hover:border-gray-700"
             }
           `}
         >
-          {/* Decorative Elements */}
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-3xl pointer-events-none" />
-
           {/* Upload Area */}
           {!file && !loading && !result && (
             <motion.div
@@ -165,27 +164,27 @@ export default function AICoachUpload() {
               className="text-center"
             >
               <div className="flex justify-center gap-4 mb-6">
-                <div className="p-3 bg-navy-700 rounded-xl">
-                  <PhotoIcon className="w-6 h-6 text-cyan-400" />
+                <div className="p-3 bg-gray-800 rounded-xl">
+                  <PhotoIcon className="w-6 h-6 text-gray-400" />
                 </div>
-                <div className="p-3 bg-navy-700 rounded-xl">
-                  <VideoCameraIcon className="w-6 h-6 text-purple-400" />
+                <div className="p-3 bg-gray-800 rounded-xl">
+                  <VideoCameraIcon className="w-6 h-6 text-gray-400" />
                 </div>
-                <div className="p-3 bg-navy-700 rounded-xl">
-                  <CloudArrowUpIcon className="w-6 h-6 text-blue-400" />
+                <div className="p-3 bg-gray-800 rounded-xl">
+                  <CloudArrowUpIcon className="w-6 h-6 text-gray-400" />
                 </div>
               </div>
 
               <div className="mb-6">
-                <p className="text-slate-300 text-lg mb-2">
+                <p className="text-gray-300 text-lg mb-2 font-medium">
                   Drag & drop your media here
                 </p>
-                <p className="text-slate-500 text-sm">
+                <p className="text-gray-500 text-sm">
                   Supports images and videos
                 </p>
               </div>
 
-              <div className="relative">
+              <div className="relative inline-block">
                 <input
                   type="file"
                   accept="image/*,video/*"
@@ -195,7 +194,7 @@ export default function AICoachUpload() {
                   }}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
-                <button className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-xl font-medium hover:from-cyan-600 hover:to-blue-600 transition-all transform hover:scale-105">
+                <button className="bg-gray-800 text-white px-6 py-3 rounded-xl font-medium hover:bg-gray-700 transition-all border border-gray-700">
                   Select File
                 </button>
               </div>
@@ -211,10 +210,10 @@ export default function AICoachUpload() {
                 exit={{ opacity: 0, y: -20 }}
                 className="space-y-6"
               >
-                <div className="relative rounded-2xl overflow-hidden bg-navy-900/50 border border-navy-700">
+                <div className="relative rounded-2xl overflow-hidden bg-gray-800 border border-gray-700">
                   <button
                     onClick={removeFile}
-                    className="absolute top-2 right-2 p-1 bg-navy-800/80 backdrop-blur rounded-lg text-slate-400 hover:text-white z-10"
+                    className="absolute top-2 right-2 p-1.5 bg-gray-900/90 backdrop-blur rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 shadow-sm z-10 transition-all"
                   >
                     <XMarkIcon className="w-5 h-5" />
                   </button>
@@ -234,14 +233,14 @@ export default function AICoachUpload() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
                     {file.type.startsWith("image") ? (
-                      <PhotoIcon className="w-5 h-5 text-cyan-400" />
+                      <PhotoIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
                     ) : (
-                      <VideoCameraIcon className="w-5 h-5 text-purple-400" />
+                      <VideoCameraIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
                     )}
-                    <span className="text-slate-300 text-sm truncate max-w-[200px]">
+                    <span className="text-gray-300 text-sm truncate">
                       {file.name}
                     </span>
                   </div>
@@ -249,7 +248,7 @@ export default function AICoachUpload() {
                   <button
                     onClick={handleUpload}
                     disabled={loading}
-                    className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-8 py-3 rounded-xl font-medium hover:from-cyan-600 hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                    className="bg-gray-800 text-white px-8 py-3 rounded-xl font-medium hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-gray-700"
                   >
                     {loading ? "Analyzing..." : "Analyze Technique"}
                   </button>
@@ -275,12 +274,12 @@ export default function AICoachUpload() {
                       repeat: Infinity,
                       ease: "linear",
                     }}
-                    className="w-12 h-12 border-4 border-navy-600 border-t-cyan-400 rounded-full"
+                    className="w-12 h-12 border-2 border-gray-700 border-t-gray-400 rounded-full"
                   />
                 </div>
-                <p className="text-slate-400">
-                  <span className="text-cyan-400 font-medium">AI Coach</span> is
-                  analyzing your technique...
+                <p className="text-gray-400">
+                  <span className="font-semibold text-gray-200">AI Coach</span>{" "}
+                  is analyzing your technique...
                 </p>
               </motion.div>
             )}
@@ -296,36 +295,43 @@ export default function AICoachUpload() {
                 className="mt-8 space-y-6"
               >
                 {/* AI Analysis */}
-                <div className="bg-navy-900/50 rounded-2xl p-6 border border-navy-700">
+                <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
                   <div className="flex items-center gap-2 mb-4">
-                    <SparklesIcon className="w-5 h-5 text-cyan-400" />
+                    <SparklesIcon className="w-5 h-5 text-gray-300" />
                     <h2 className="font-semibold text-white">AI Analysis</h2>
                   </div>
-                  <p className="text-slate-300 leading-relaxed">
-                    {result.aiDescription}
-                  </p>
-                </div>
-
-                {/* Coach Feedback */}
-                <div className="bg-navy-900/50 rounded-2xl p-6 border border-navy-700">
-                  <div className="flex items-center gap-2 mb-4">
-                    <ChatBubbleLeftRightIcon className="w-5 h-5 text-purple-400" />
-                    <h2 className="font-semibold text-white">Coach Feedback</h2>
-                  </div>
-                  <p className="text-slate-300 leading-relaxed">
+                  <p className="text-gray-300 leading-relaxed">
                     {result.aiFeedback}
                   </p>
                 </div>
 
-                {/* Instructor Feedback */}
+                {/* Instructor Feedback Section */}
+                <div className="border-t border-gray-800 pt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <ChatBubbleLeftRightIcon className="w-5 h-5 text-gray-400" />
+                    <h2 className="font-semibold text-white">
+                      Instructor Feedback
+                    </h2>
+                  </div>
+                  <textarea
+                    value={instructorFeedback}
+                    onChange={(e) => setInstructorFeedback(e.target.value)}
+                    placeholder="Add your own feedback or notes..."
+                    className="w-full p-4 bg-gray-800 border border-gray-700 rounded-xl text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-transparent transition-all resize-none"
+                    rows={3}
+                  />
+                  <button className="mt-3 px-4 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 transition-all text-sm font-medium">
+                    Save Notes
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-slate-500 text-sm mt-6">
-          Powered by advanced AI • Instant feedback • Pro tips included
+        <p className="text-center text-gray-600 text-sm mt-6">
+          Powered by AI • Instant feedback • Pro tips included
         </p>
       </motion.div>
     </div>

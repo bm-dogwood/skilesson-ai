@@ -86,7 +86,13 @@ export async function POST(req: Request) {
 
         break;
       }
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object as Stripe.Invoice;
 
+        console.log("✅ PAYMENT SUCCESS:", invoice.customer_email);
+
+        break;
+      }
       /**
        * 🔄 SUBSCRIPTION UPDATED
        */

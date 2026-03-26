@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import RootLayoutShell from "@/components/RootLayoutShell";
 import { Providers } from "./provider";
+import { LanguageProvider } from "@/context/LanguageContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -59,9 +60,12 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${inter.variable} ${plusJakartaSans.variable} antialiased`}
       >
-        <Providers>
-          <RootLayoutShell>{children}</RootLayoutShell>
-        </Providers>
+        <LanguageProvider>
+          <Providers>
+            {" "}
+            <RootLayoutShell>{children}</RootLayoutShell>{" "}
+          </Providers>
+        </LanguageProvider>
       </body>
     </html>
   );
