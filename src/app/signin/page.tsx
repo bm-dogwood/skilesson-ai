@@ -17,7 +17,8 @@ function SignInForm() {
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-
+  const verified = searchParams.get("verified");
+  const verifyEmail = searchParams.get("verifyEmail");
   const returnUrl = searchParams.get("returnUrl") || "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,7 +34,7 @@ function SignInForm() {
       });
 
       if (res?.error) {
-        setError("Invalid email or password");
+        setError(res.error);
         return;
       }
 
@@ -109,7 +110,22 @@ function SignInForm() {
                 <p className="text-sm text-red-400">{error}</p>
               </motion.div>
             )}
+            {verified && (
+              <div className="mb-5 rounded-xl border border-green-500/20 bg-green-500/[0.08] px-4 py-3">
+                <p className="text-sm text-green-400">
+                  Email verified! You can now sign in.
+                </p>
+              </div>
+            )}
 
+            {verifyEmail && (
+              <div className="mb-5 rounded-xl border border-yellow-500/20 bg-yellow-500/[0.08] px-4 py-3">
+                <p className="text-sm text-yellow-400">
+                  Please check your email to verify your account before signing
+                  in.
+                </p>
+              </div>
+            )}
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
               {/* Email */}
@@ -215,7 +231,18 @@ function SignInForm() {
               type="button"
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={async () => {
+                const res = await signIn("google", {
+                  redirect: false,
+                  callbackUrl: "/dashboard",
+                });
+
+                if (res?.error) {
+                  setError(res.error);
+                } else if (res?.url) {
+                  router.push(res.url);
+                }
+              }}
               className="w-full rounded-xl border border-slate-700/80 bg-transparent py-3.5 text-sm font-semibold text-slate-300 hover:bg-slate-800/60 hover:border-slate-600 transition-all duration-200 flex items-center justify-center gap-3 cursor-pointer"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">

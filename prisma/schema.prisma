@@ -19,6 +19,7 @@ model User {
   // ✅ Add these
   level     String?
   sport     String?
+   hasReceivedWelcomeEmail Boolean @default(false)
 
   progress  Progress[]
    lessons Lesson[]
@@ -138,4 +139,12 @@ model AISubmission {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+ 
 }

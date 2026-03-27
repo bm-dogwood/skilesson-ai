@@ -2,6 +2,7 @@ import { stripe } from "@/lib/stripe";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import Stripe from "stripe";
+import { sendSubscriptionEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   console.log("🔥 WEBHOOK HIT");
@@ -131,7 +132,19 @@ export async function POST(req: Request) {
 
         break;
       }
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
 
+        const userEmail = session.customer_email;
+
+        console.log("🎉 FIRST PAYMENT SUCCESS:", userEmail);
+
+        if (userEmail) {
+          await sendSubscriptionEmail(userEmail);
+        }
+
+        break;
+      }
       /**
        * ❌ SUBSCRIPTION DELETED
        */

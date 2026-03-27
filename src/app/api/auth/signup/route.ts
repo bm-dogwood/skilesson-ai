@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 import { NextResponse } from "next/server";
+import { generateVerificationToken } from "@/utils/tokens";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   const { email, password, name, level, sport } = await req.json();
@@ -25,6 +27,17 @@ export async function POST(req: Request) {
       emailVerified: null,
     },
   });
+  const token = generateVerificationToken();
+
+  await prisma.verificationToken.create({
+    data: {
+      email,
+      token,
+      expires: new Date(Date.now() + 1000 * 60 * 60), // 1 hour
+    },
+  });
+
+  await sendVerificationEmail(email, token);
 
   return NextResponse.json({ user });
 }

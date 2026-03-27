@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -26,6 +27,9 @@ export const authOptions: AuthOptions = {
         });
 
         if (!user || !user.password) return null;
+        if (!user.emailVerified) {
+          throw new Error("Please verify your email first");
+        }
 
         const isValid = await bcrypt.compare(
           credentials.password,
@@ -80,6 +84,49 @@ export const authOptions: AuthOptions = {
         },
         userId: token.id as string,
       };
+    },
+    async signIn({ user, account }) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: user.email! },
+      });
+
+      if (!existingUser) {
+        // ✅ CREATE USER automatically for Google signup
+        const newUser = await prisma.user.create({
+          data: {
+            email: user.email!,
+            name: user.name,
+            emailVerified: new Date(), // Google already verified
+            role: "user",
+          },
+        });
+
+        user.id = newUser.id;
+        user.role = newUser.role;
+
+        await sendWelcomeEmail(newUser.email);
+
+        return true;
+      }
+
+      if (!existingUser.emailVerified) {
+        throw new Error("Please verify your email first.");
+      }
+
+      // ✅ send welcome email for BOTH google + credentials
+      if (!existingUser.hasReceivedWelcomeEmail) {
+        await sendWelcomeEmail(existingUser.email);
+
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: { hasReceivedWelcomeEmail: true },
+        });
+      }
+
+      user.id = existingUser.id;
+      user.role = existingUser.role;
+
+      return true;
     },
   },
 

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { sendNewLessonEmail } from "@/lib/email";
 
 // ✅ GET ALL LESSONS
 export async function GET() {
@@ -36,6 +37,16 @@ export async function POST(req: Request) {
       packageId,
     },
   });
-
+  const users = await prisma.user.findMany({
+    where: {
+      subscription: {
+        packageId: packageId,
+        status: "active",
+      },
+    },
+  });
+  await Promise.all(
+    users.map((user) => sendNewLessonEmail(user.email, lesson.title))
+  );
   return NextResponse.json({ success: true, lesson });
 }

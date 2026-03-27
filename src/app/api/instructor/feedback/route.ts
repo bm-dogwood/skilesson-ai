@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { sendInstructorReplyEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -18,7 +19,10 @@ export async function POST(req: NextRequest) {
       instructorFeedback: feedback,
       status: "reviewed",
     },
+    include: {
+      user: true,
+    },
   });
-
+  await sendInstructorReplyEmail(updated.user.email, feedback);
   return NextResponse.json({ success: true, data: updated });
 }
