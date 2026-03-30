@@ -18,6 +18,9 @@ interface User {
     status: string | null;
     startDate: string | null;
     endDate: string | null;
+    package?: {
+      name: string;
+    } | null;
   } | null;
   createdAt: string;
   updatedAt: string;
@@ -87,7 +90,7 @@ export default function AdminUsersPage() {
         name: user.name,
         email: user.email,
         role: user.role,
-        plan: user.subscription?.plan || null,
+        plan: user.subscription?.package?.name || null,
         sport: null, // You'll need to add this to your schema if needed
         level: null, // You'll need to add this to your schema if needed
         createdAt: new Date(user.createdAt).toISOString().split("T")[0],

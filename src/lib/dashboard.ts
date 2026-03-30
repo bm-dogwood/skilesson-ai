@@ -11,7 +11,7 @@ export async function getDashboardStats() {
       prisma.subscription.findMany({
         where: { status: "active" },
         include: {
-          package: true, // ✅ IMPORTANT
+          package: true,
         },
       }),
     ]);
@@ -46,7 +46,11 @@ export async function getRecentUsers() {
     take: 5,
     orderBy: { createdAt: "desc" },
     include: {
-      subscription: true,
+      subscription: {
+        include: {
+          package: true,
+        },
+      },
     },
   });
 }

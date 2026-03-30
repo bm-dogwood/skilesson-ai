@@ -8,47 +8,6 @@ import {
   getPlanDistribution,
   getRevenueByMonth,
 } from "@/lib/dashboard";
-const STATS = {
-  totalUsers: 12483,
-  activeSubscriptions: 3841,
-  totalLessons: 296,
-  monthlyRevenue: 48320,
-};
-
-const RECENT_USERS = [
-  {
-    id: "1",
-    name: "Ava Mitchell",
-    email: "ava@example.com",
-    role: "student",
-    plan: "summit",
-    createdAt: "2025-01-10",
-  },
-  {
-    id: "2",
-    name: "Carlos Ruiz",
-    email: "carlos@example.com",
-    role: "instructor",
-    plan: "apex",
-    createdAt: "2024-11-03",
-  },
-  {
-    id: "3",
-    name: "Priya Sharma",
-    email: "priya@example.com",
-    role: "student",
-    plan: null,
-    createdAt: "2025-03-01",
-  },
-  {
-    id: "4",
-    name: "James Okafor",
-    email: "james@example.com",
-    role: "admin",
-    plan: "apex",
-    createdAt: "2024-06-15",
-  },
-];
 
 export default async function AdminDashboardPage() {
   const stats = await getDashboardStats();
@@ -323,7 +282,7 @@ export default async function AdminDashboardPage() {
                 </td>
                 <td>
                   {u.subscription?.plan ? (
-                    <Badge value={u.subscription.plan} />
+                    <Badge value={u.subscription?.package?.name ?? "Free"} />
                   ) : (
                     <span style={{ color: "var(--slate)" }}>Free</span>
                   )}

@@ -74,7 +74,7 @@ const tooltipStyle = {
 function greeting(name: string | null) {
   const h = new Date().getHours();
   const part = h < 12 ? "morning" : h < 17 ? "afternoon" : "evening";
-  return `Good ${part}${name ? `, ${name.split(" ")[0]}` : ""} 👋`;
+  return `Good ${part}${name ? `, ${name.split(" ")[0]}` : ""} `;
 }
 
 function LevelBadge({ level }: { level: string | null }) {

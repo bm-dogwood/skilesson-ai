@@ -7,7 +7,11 @@ export async function GET() {
   try {
     const users = await prisma.user.findMany({
       include: {
-        subscription: true,
+        subscription: {
+          include: {
+            package: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
