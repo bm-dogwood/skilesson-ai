@@ -26,6 +26,16 @@ const fadeUp = {
 export default function AboutPage() {
   const t = useT();
 
+  // Function to render bio with line breaks for bullet points
+  const renderBio = (bio: string) => {
+    return bio.split("\n").map((line, index) => (
+      <span key={index}>
+        {line}
+        {index < bio.split("\n").length - 1 && <br />}
+      </span>
+    ));
+  };
+
   return (
     <div className="min-h-screen bg-[#0f172a] overflow-hidden">
       {/* Background texture */}
@@ -115,7 +125,7 @@ export default function AboutPage() {
           </motion.div>
         </section>
 
-        {/* Team Section */}
+        {/* Team Section - Centered for desktop */}
         <section className="pb-24 px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl mx-auto">
             <motion.div
@@ -134,52 +144,55 @@ export default function AboutPage() {
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {t.about.team.members.map(
-                (
-                  member: { name: string; title: string; bio: string },
-                  index: number
-                ) => (
-                  <motion.div
-                    key={member.name}
-                    initial={{ opacity: 0, y: 40 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-40px" }}
-                    transition={{
-                      duration: 0.5,
-                      delay: index * 0.15,
-                      ease: [0.21, 0.47, 0.32, 0.98],
-                    }}
-                    className="relative rounded-2xl p-px"
-                  >
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-slate-700/60 via-slate-800/30 to-slate-700/60" />
-                    <div className="relative rounded-2xl bg-slate-900/80 backdrop-blur-xl p-8 lg:p-10 h-full">
-                      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent rounded-t-2xl" />
-                      <div className="flex items-center gap-5 mb-6">
-                        <div className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-sky-500/20 to-sky-400/10 border-2 border-sky-500/30 flex items-center justify-center">
-                          <User className="h-8 w-8 text-sky-400" />
+            {/* Centered single card on desktop, full width on mobile */}
+            <div className="flex justify-center">
+              <div className="w-full md:max-w-2xl">
+                {t.about.team.members.map(
+                  (
+                    member: { name: string; title: string; bio: string },
+                    index: number
+                  ) => (
+                    <motion.div
+                      key={member.name}
+                      initial={{ opacity: 0, y: 40 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-40px" }}
+                      transition={{
+                        duration: 0.5,
+                        delay: index * 0.15,
+                        ease: [0.21, 0.47, 0.32, 0.98],
+                      }}
+                      className="relative rounded-2xl p-px"
+                    >
+                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-slate-700/60 via-slate-800/30 to-slate-700/60" />
+                      <div className="relative rounded-2xl bg-slate-900/80 backdrop-blur-xl p-8 lg:p-10">
+                        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent rounded-t-2xl" />
+                        <div className="flex items-center gap-5 mb-6">
+                          <div className="flex-shrink-0 h-16 w-16 rounded-full bg-gradient-to-br from-sky-500/20 to-sky-400/10 border-2 border-sky-500/30 flex items-center justify-center">
+                            <User className="h-8 w-8 text-sky-400" />
+                          </div>
+                          <div>
+                            <h3
+                              className="text-xl font-bold text-white"
+                              style={{
+                                fontFamily: "var(--font-plus-jakarta-sans)",
+                              }}
+                            >
+                              {member.name}
+                            </h3>
+                            <p className="text-sm text-sky-400 font-medium">
+                              {member.title}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <h3
-                            className="text-xl font-bold text-white"
-                            style={{
-                              fontFamily: "var(--font-plus-jakarta-sans)",
-                            }}
-                          >
-                            {member.name}
-                          </h3>
-                          <p className="text-sm text-sky-400 font-medium">
-                            {member.title}
-                          </p>
-                        </div>
+                        <p className="text-slate-400 leading-relaxed whitespace-pre-line">
+                          {renderBio(member.bio)}
+                        </p>
                       </div>
-                      <p className="text-slate-400 leading-relaxed">
-                        {member.bio}
-                      </p>
-                    </div>
-                  </motion.div>
-                )
-              )}
+                    </motion.div>
+                  )
+                )}
+              </div>
             </div>
           </div>
         </section>

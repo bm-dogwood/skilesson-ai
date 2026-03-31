@@ -28,7 +28,6 @@ const getPlanIcon = (name: string) => {
 };
 
 // ─── Derive a slug from the DB name to look up translations ──────────
-// "Explorer" → "explorer" | "Summit Pro" → "summit" | etc.
 const getPlanSlug = (name: string): "explorer" | "summit" | "apex" | null => {
   const n = name.toLowerCase();
   if (n.includes("explorer")) return "explorer";
@@ -257,11 +256,12 @@ export default function PricingPage() {
               const Icon = getPlanIcon(plan.name);
               const slug = getPlanSlug(plan.name);
 
-              // ✅ Look up translated name + description; fall back to DB value if slug unknown
+              // ✅ Look up translated name + description + features
               const translatedPlan = slug ? t.pricing.plans[slug] : null;
               const displayName = translatedPlan?.name ?? plan.name;
               const displayDescription =
                 translatedPlan?.description ?? plan.description;
+              const translatedFeatures = translatedPlan?.features ?? [];
 
               const isPopular =
                 plan.name.toLowerCase().includes("summit") ||
@@ -272,10 +272,16 @@ export default function PricingPage() {
               const totalPrice = isAnnual
                 ? plan.priceYearly
                 : plan.priceMonthly;
-              const features =
-                typeof plan.features === "string"
-                  ? JSON.parse(plan.features)
-                  : plan.features || [];
+
+              // Use translated features if available, otherwise parse from DB
+              let features = translatedFeatures;
+              if (features.length === 0 && plan.features) {
+                features =
+                  typeof plan.features === "string"
+                    ? JSON.parse(plan.features)
+                    : plan.features;
+              }
+
               const savings = isAnnual
                 ? plan.priceMonthly * 12 - plan.priceYearly
                 : 0;
@@ -400,7 +406,7 @@ export default function PricingPage() {
 
                     <div className="h-px bg-slate-800 mb-8" />
 
-                    {/* Features — these come from DB, untranslated for now */}
+                    {/* ✅ Translated features */}
                     <ul className="space-y-3.5">
                       {features.map((feature: string, i: number) => (
                         <li key={i} className="flex items-start gap-3">

@@ -186,6 +186,7 @@ export const translations = {
     // -------------------------
     // PRICING PAGE
     // -------------------------
+
     pricing: {
       badge: "Start with a 7-day free trial",
       title1: "Invest in Your",
@@ -205,22 +206,51 @@ export const translations = {
         subtitle:
           "Not the right fit? Get a full refund within 30 days. No questions asked.",
       },
-      // Keyed by the lowercase DB name — used to look up translated name + description
       plans: {
         explorer: {
           name: "Explorer",
           description:
             "Perfect for beginners who want to build confidence before their first lesson.",
+          features: [
+            "Access to all Beginner lessons (50+ video lessons)",
+            "Foundational ski & snowboard techniques",
+            "Equipment guides & gear recommendations",
+            "Progress tracking dashboard",
+            "Community forum access",
+            "AI Coach basic encouragement",
+            "Email support",
+          ],
         },
         summit: {
           name: "Summit",
           description:
             "For intermediate skiers ready to sharpen their technique and tackle harder terrain.",
+          features: [
+            "Everything in Explorer, plus:",
+            "Full Intermediate curriculum (80+ lessons)",
+            "Advanced technique breakdowns",
+            "Terrain-specific training (moguls, powder, park)",
+            "Video analysis tips",
+            "AI Coach personalized feedback",
+            "Monthly live Q&A with instructors",
+            "Priority support",
+          ],
         },
         apex: {
           name: "Apex",
           description:
             "The complete package for serious skiers and families who want it all.",
+          features: [
+            "Everything in Summit, plus:",
+            "Complete Advanced curriculum (120+ lessons)",
+            "Competition prep & racing techniques",
+            "Family plan (up to 4 profiles)",
+            "Parent dashboard for tracking kids' progress",
+            "1-on-1 virtual coaching sessions (2/month)",
+            "AI Coach advanced analytics",
+            "Early access to new content",
+            "Dedicated support",
+          ],
         },
       },
       faq: {
@@ -269,6 +299,7 @@ export const translations = {
     // -------------------------
     // ABOUT PAGE
     // -------------------------
+    // Updated translations object - About page section only
     about: {
       badge: "Our Story",
       title1: "Built by Mountain Lovers,",
@@ -284,7 +315,7 @@ export const translations = {
           {
             name: "Tyler Berglund",
             title: "Head of Instruction & Operations",
-            bio: "20+ years on the slopes of Vail. Former ski school director. PSIA Level 3 certified. Tyler has taught thousands of students from first-timers to expert racers.",
+            bio: "• 20+ years on the slopes of Vail\n• Certified Boot Doctor & Ski Technician\n• PSIA-certified ski instructor\n• Has coached skiers of all ages and levels across some of the best terrain in the country\n• Co-founded SkiLesson.ai to make quality instruction accessible to everyone, not just resort guests",
           },
         ],
       },
@@ -547,16 +578,46 @@ export const translations = {
           name: "Explorador",
           description:
             "Perfecto para principiantes que quieren ganar confianza antes de su primera lección.",
+          features: [
+            "Acceso a todas las lecciones para principiantes (50+ videos)",
+            "Técnicas fundamentales de esquí y snowboard",
+            "Guías de equipo y recomendaciones",
+            "Panel de seguimiento de progreso",
+            "Acceso al foro comunitario",
+            "Entrenador IA con motivación básica",
+            "Soporte por email",
+          ],
         },
         summit: {
           name: "Cima",
           description:
             "Para esquiadores intermedios listos para perfeccionar su técnica y abordar terrenos más difíciles.",
+          features: [
+            "Todo lo del plan Explorador, más:",
+            "Currículo completo intermedio (80+ lecciones)",
+            "Análisis de técnica avanzada",
+            "Entrenamiento específico por terreno (moguls, polvo, parque)",
+            "Consejos de análisis de video",
+            "Entrenador IA con feedback personalizado",
+            "Sesiones mensuales en vivo con instructores",
+            "Soporte prioritario",
+          ],
         },
         apex: {
           name: "Ápice",
           description:
             "El paquete completo para esquiadores serios y familias que lo quieren todo.",
+          features: [
+            "Todo lo del plan Cima, más:",
+            "Currículo completo avanzado (120+ lecciones)",
+            "Preparación para competiciones y técnicas de carrera",
+            "Plan familiar (hasta 4 perfiles)",
+            "Panel para padres con seguimiento del progreso",
+            "Sesiones virtuales 1-a-1 con entrenador (2/mes)",
+            "Entrenador IA con análisis avanzado",
+            "Acceso anticipado a nuevo contenido",
+            "Soporte dedicado",
+          ],
         },
       },
       faq: {
@@ -620,7 +681,7 @@ export const translations = {
           {
             name: "Tyler Berglund",
             title: "Director de Instrucción y Operaciones",
-            bio: "Más de 20 años en las pistas de Vail. Ex director de escuela de esquí. Certificado PSIA Nivel 3. Tyler ha enseñado a miles de estudiantes, desde principiantes hasta corredores expertos.",
+            bio: "• Más de 20 años en las pistas de Vail\n• Doctor de botas y técnico de esquí certificado\n• Instructor de esquí certificado por PSIA\n• Ha entrenado a esquiadores de todas las edades y niveles en algunos de los mejores terrenos del país\n• Cofundó SkiLesson.ai para hacer que la enseñanza de calidad sea accesible para todos, no solo para los huéspedes de resorts",
           },
         ],
       },
