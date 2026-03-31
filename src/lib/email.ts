@@ -357,7 +357,7 @@ export async function sendVerificationEmail(email: string, token: string) {
 
   try {
     await resend.emails.send({
-      from: "SkiLesson.ai <verify@resend.dev>",
+      from: "SkiLesson.ai <admin@skilesson.ai>",
       to: email,
       subject: "Verify your email address",
       html: `
@@ -450,7 +450,7 @@ export async function sendWelcomeEmail(email: string) {
 
   try {
     await resend.emails.send({
-      from: "SkiLesson.ai <welcome@resend.dev>",
+      from: "SkiLesson.ai <admin@skilesson.ai>",
       to: email,
       subject: "Welcome to SkiLesson.ai",
       html: `
@@ -553,7 +553,7 @@ export async function sendInstructorReplyEmail(
 
   try {
     await resend.emails.send({
-      from: "SkiLesson.ai <instructor@resend.dev>",
+      from: "SkiLesson.ai <admin@skilesson.ai>",
       to: email,
       subject: "Your instructor replied to your submission",
       html: `
@@ -637,7 +637,7 @@ export async function sendNewLessonEmail(email: string, title: string) {
 
   try {
     await resend.emails.send({
-      from: "SkiLesson.ai <lessons@resend.dev>",
+      from: "SkiLesson.ai <admin@skilesson.ai>",
       to: email,
       subject: `New lesson available: ${title}`,
       html: `
@@ -731,7 +731,7 @@ export async function sendSubscriptionEmail(email: string) {
 
   try {
     await resend.emails.send({
-      from: "SkiLesson.ai <subscriptions@resend.dev>",
+      from: "SkiLesson.ai <admin@skilesson.ai>",
       to: email,
       subject: "Your Pro subscription is active",
       html: `
