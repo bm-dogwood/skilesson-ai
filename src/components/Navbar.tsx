@@ -6,8 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mountain, Menu, X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import UserMenu from "@/components/UserMenu";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useT } from "@/hooks/useT";
 
 export default function Navbar() {
+  const t = useT();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isAuthenticated } = useAuth();
@@ -30,10 +33,10 @@ export default function Navbar() {
   }, [mobileOpen]);
 
   const navLinks = [
-    { label: "How It Works", href: "#how-it-works" },
-    { label: "Curriculum", href: "#curriculum" },
-    { label: "Pricing", href: "/pricing" },
-    { label: "About", href: "/about" },
+    { label: t.nav.howItWorks, href: "/#how-it-works" },
+    { label: t.nav.curriculum, href: "/#curriculum" },
+    { label: t.nav.pricing, href: "/pricing" },
+    { label: t.nav.about, href: "/about" },
   ];
 
   return (
@@ -51,19 +54,21 @@ export default function Navbar() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between lg:h-20">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 group">
+            <Link
+              href="/"
+              className="flex items-center gap-2 group flex-shrink-0"
+            >
               <Mountain className="h-7 w-7 text-ice transition-transform duration-300 group-hover:scale-110" />
               <span className="font-heading text-xl font-bold tracking-tight text-snow">
-                SkiLesson
-                <span className="text-ice">.ai</span>
+                SkiLesson<span className="text-ice">.ai</span>
               </span>
             </Link>
 
-            {/* Desktop Nav */}
+            {/* Desktop nav links */}
             <div className="hidden items-center gap-1 lg:flex">
               {navLinks.map((link) => (
                 <Link
-                  key={link.label}
+                  key={link.href}
                   href={link.href}
                   className="rounded-lg px-4 py-2 text-sm font-medium text-snow/70 transition-colors hover:text-snow hover:bg-white/5"
                 >
@@ -75,13 +80,14 @@ export default function Navbar() {
                   href="/dashboard"
                   className="rounded-lg px-4 py-2 text-sm font-medium text-snow/70 transition-colors hover:text-snow hover:bg-white/5"
                 >
-                  Dashboard
+                  {t.nav.dashboard}
                 </Link>
               )}
             </div>
 
-            {/* Desktop CTA */}
-            <div className="hidden items-center gap-4 lg:flex">
+            {/* Desktop right section: Language Switcher + Auth */}
+            <div className="hidden items-center gap-3 lg:flex">
+              <LanguageSwitcher />
               {isAuthenticated ? (
                 <UserMenu />
               ) : (
@@ -90,13 +96,13 @@ export default function Navbar() {
                     href="/signin"
                     className="text-sm font-medium text-snow/70 transition-colors hover:text-snow"
                   >
-                    Sign In
+                    {t.nav.signIn}
                   </Link>
                   <Link
                     href="/pricing"
                     className="rounded-full bg-ice px-5 py-2.5 text-sm font-semibold text-navy transition-all duration-200 hover:bg-powder hover:shadow-lg hover:shadow-ice/20"
                   >
-                    Start Free Trial
+                    {t.nav.startFreeTrial}
                   </Link>
                 </>
               )}
@@ -108,13 +114,17 @@ export default function Navbar() {
               className="flex items-center justify-center rounded-lg p-2 text-snow/70 transition-colors hover:text-snow lg:hidden"
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
             >
-              {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {mobileOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
       </motion.nav>
 
-      {/* Mobile Menu */}
+      {/* Mobile menu */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -127,7 +137,7 @@ export default function Navbar() {
             <div className="flex h-full flex-col items-center justify-center gap-8">
               {navLinks.map((link, i) => (
                 <motion.div
-                  key={link.label}
+                  key={link.href}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + i * 0.05 }}
@@ -141,6 +151,7 @@ export default function Navbar() {
                   </Link>
                 </motion.div>
               ))}
+
               {isAuthenticated && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -152,10 +163,20 @@ export default function Navbar() {
                     onClick={() => setMobileOpen(false)}
                     className="font-heading text-2xl font-semibold text-snow/80 transition-colors hover:text-snow"
                   >
-                    Dashboard
+                    {t.nav.dashboard}
                   </Link>
                 </motion.div>
               )}
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="mt-4"
+              >
+                <LanguageSwitcher />
+              </motion.div>
+
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -171,14 +192,14 @@ export default function Navbar() {
                       onClick={() => setMobileOpen(false)}
                       className="text-lg font-medium text-snow/60 transition-colors hover:text-snow"
                     >
-                      Sign In
+                      {t.nav.signIn}
                     </Link>
                     <Link
                       href="/pricing"
                       onClick={() => setMobileOpen(false)}
                       className="rounded-full bg-ice px-8 py-3 text-lg font-semibold text-navy transition-all hover:bg-powder"
                     >
-                      Start Free Trial
+                      {t.nav.startFreeTrial}
                     </Link>
                   </>
                 )}

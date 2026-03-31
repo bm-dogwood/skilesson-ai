@@ -10,25 +10,9 @@ import {
   Send,
 } from "lucide-react";
 import { useState } from "react";
+import { useT } from "@/hooks/useT";
 
-const footerLinks = {
-  company: [
-    { label: "About Us", href: "/about" },
-    { label: "Our Instructors", href: "/instructors" },
-  ],
-  curriculum: [
-    { label: "Explorer", href: "/pricing" },
-    { label: "Summit", href: "/pricing" },
-    { label: "Apex", href: "/pricing" },
-  ],
-  support: [
-    { label: "Home Page", href: "/" },
-    { label: "Contact Us", href: "/contact" },
-    { label: "Sign in", href: "/signin" },
-    { label: "Pricing", href: "/pricing" },
-  ],
-};
-
+// Social links are not translatable — URLs and icon labels stay static
 const socials = [
   {
     icon: Instagram,
@@ -45,6 +29,7 @@ const socials = [
 ];
 
 export default function Footer() {
+  const t = useT();
   const [email, setEmail] = useState("");
 
   return (
@@ -59,19 +44,19 @@ export default function Footer() {
                 SkiLesson<span className="text-ice">.ai</span>
               </span>
             </Link>
+            {/* ✅ Translated tagline */}
             <p className="mt-3 text-sm leading-relaxed text-snow/50">
-              The premier online platform for ski and snowboard education. Learn
-              from world-class instructors, track your progress, and hit the
-              mountain with confidence.
+              {t.footer.tagline}
             </p>
           </div>
 
           <div className="w-full max-w-sm">
+            {/* ✅ Translated newsletter section */}
             <p className="mb-2 text-sm font-semibold text-snow/80">
-              Stay in the loop
+              {t.footer.newsletterHeading}
             </p>
             <p className="mb-4 text-sm text-snow/40">
-              Get early access, tips, and mountain updates.
+              {t.footer.newsletterSub}
             </p>
             <form
               onSubmit={(e) => {
@@ -85,7 +70,7 @@ export default function Footer() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@email.com"
+                placeholder={t.footer.emailPlaceholder}
                 className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-snow placeholder:text-snow/30 focus:border-ice/40 focus:outline-none focus:ring-1 focus:ring-ice/20 transition-colors"
               />
               <button
@@ -99,66 +84,73 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Link columns */}
+        {/* Link columns — ✅ all labels and headings from t.footer */}
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
           <div>
             <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-snow/40">
-              Company
+              {t.footer.companyHeading}
             </h3>
             <ul className="space-y-3">
-              {footerLinks.company.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-snow/50 transition-colors hover:text-snow"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
+              {t.footer.links.company.map(
+                (link: { label: string; href: string }) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-snow/50 transition-colors hover:text-snow"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                )
+              )}
             </ul>
           </div>
+
           <div>
             <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-snow/40">
-              Curriculum
+              {t.footer.curriculumHeading}
             </h3>
             <ul className="space-y-3">
-              {footerLinks.curriculum.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-snow/50 transition-colors hover:text-snow"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
+              {t.footer.links.curriculum.map(
+                (link: { label: string; href: string }) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-snow/50 transition-colors hover:text-snow"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                )
+              )}
             </ul>
           </div>
+
           <div>
             <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-snow/40">
-              Support
+              {t.footer.supportHeading}
             </h3>
             <ul className="space-y-3">
-              {footerLinks.support.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-snow/50 transition-colors hover:text-snow"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
+              {t.footer.links.support.map(
+                (link: { label: string; href: string }) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-snow/50 transition-colors hover:text-snow"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                )
+              )}
             </ul>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 sm:flex-row">
-          <p className="text-xs text-snow/30">
-            &copy; 2026 SkiLesson.ai &mdash; A Dogwood Brands Company
-          </p>
+          {/* ✅ Translated copyright */}
+          <p className="text-xs text-snow/30">{t.footer.copyright}</p>
           <div className="flex items-center gap-4">
             {socials.map((s) => (
               <a
