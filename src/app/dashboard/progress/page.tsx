@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock,
   Calendar,
@@ -14,6 +14,8 @@ import {
   Mountain,
   Snowflake,
   Timer,
+  BookOpen,
+  TrendingUp,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -24,11 +26,37 @@ const fadeInUp = {
 };
 
 const stagger = {
-  animate: {
-    transition: { staggerChildren: 0.08 },
-  },
+  animate: { transition: { staggerChildren: 0.08 } },
 };
 
+// ─── Icon map for badges from API ─────────────────────────────────────────────
+const ICON_MAP: Record<string, any> = {
+  Star,
+  Flame,
+  Trophy,
+  Zap,
+  Moon,
+  Mountain,
+  Snowflake,
+  Timer,
+  Target,
+  Award,
+};
+
+// ─── Level color map ──────────────────────────────────────────────────────────
+const LEVEL_COLOR: Record<string, string> = {
+  Beginner: "bg-emerald-400/80",
+  Intermediate: "bg-sky-400/80",
+  Advanced: "bg-orange-400/80",
+};
+
+const LEVEL_DOT: Record<string, string> = {
+  Beginner: "bg-emerald-400",
+  Intermediate: "bg-sky-400",
+  Advanced: "bg-orange-400",
+};
+
+// ─── Large Progress Ring ───────────────────────────────────────────────────────
 function LargeProgressRing({ progress }: { progress: number }) {
   const size = 180;
   const strokeWidth = 12;
@@ -52,7 +80,7 @@ function LargeProgressRing({ progress }: { progress: number }) {
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="url(#largeProgressGradient)"
+          stroke="url(#largeGrad)"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -61,13 +89,7 @@ function LargeProgressRing({ progress }: { progress: number }) {
           transition={{ duration: 2, ease: "easeOut", delay: 0.3 }}
         />
         <defs>
-          <linearGradient
-            id="largeProgressGradient"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="0%"
-          >
+          <linearGradient id="largeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#38bdf8" />
             <stop offset="50%" stopColor="#7dd3fc" />
             <stop offset="100%" stopColor="#f59e0b" />
@@ -89,123 +111,285 @@ function LargeProgressRing({ progress }: { progress: number }) {
   );
 }
 
-const levelBreakdown = [
-  {
-    level: "Beginner",
-    completed: 13,
-    total: 18,
-    color: "from-green-400 to-emerald-400",
-  },
-  {
-    level: "Intermediate",
-    completed: 0,
-    total: 12,
-    color: "from-ice to-powder",
-  },
-  {
-    level: "Advanced",
-    completed: 0,
-    total: 8,
-    color: "from-orange-400 to-red-400",
-  },
-];
+// ─── Activity Heatmap (GitHub-style) ─────────────────────────────────────────
+function ActivityHeatmap({
+  data,
+}: {
+  data: { date: string; count: number }[];
+}) {
+  const [tooltip, setTooltip] = useState<{
+    date: string;
+    count: number;
+    x: number;
+    y: number;
+  } | null>(null);
 
-const weeklyActivity = [
-  { day: "Mon", minutes: 35 },
-  { day: "Tue", minutes: 22 },
-  { day: "Wed", minutes: 45 },
-  { day: "Thu", minutes: 18 },
-  { day: "Fri", minutes: 30 },
-  { day: "Sat", minutes: 0 },
-  { day: "Sun", minutes: 0 },
-];
+  if (!data.length) return null;
 
-const maxMinutes = Math.max(...weeklyActivity.map((d) => d.minutes), 1);
+  // Group into columns of 7 (weeks), each column = one week top-to-bottom
+  const weeks: { date: string; count: number }[][] = [];
+  for (let i = 0; i < data.length; i += 7) {
+    weeks.push(data.slice(i, i + 7));
+  }
 
-const badges = [
-  {
-    name: "First Lesson",
-    icon: Star,
-    earned: true,
-    description: "Complete your very first lesson",
-  },
-  {
-    name: "Week Warrior",
-    icon: Flame,
-    earned: true,
-    description: "5-day learning streak",
-  },
-  {
-    name: "Module Master",
-    icon: Trophy,
-    earned: true,
-    description: "Complete an entire module",
-  },
-  {
-    name: "Speed Demon",
-    icon: Zap,
-    earned: false,
-    description: "Complete 3 lessons in one day",
-  },
-  {
-    name: "Night Owl",
-    icon: Moon,
-    earned: false,
-    description: "Study after 10 PM",
-  },
-  {
-    name: "Trailblazer",
-    icon: Mountain,
-    earned: false,
-    description: "Start an Advanced lesson",
-  },
-  {
-    name: "Snowflake",
-    icon: Snowflake,
-    earned: true,
-    description: "Log in during winter season",
-  },
-  {
-    name: "Sharpshooter",
-    icon: Target,
-    earned: false,
-    description: "Score 100% on a quiz",
-  },
-  {
-    name: "Dedicated",
-    icon: Timer,
-    earned: false,
-    description: "Accumulate 50 hours of learning",
-  },
-];
+  const maxCount = Math.max(...data.map((d) => d.count), 1);
 
-const skills = [
-  { name: "Balance", progress: 72 },
-  { name: "Turning", progress: 35 },
-  { name: "Speed Control", progress: 55 },
-  { name: "Edge Control", progress: 20 },
-  { name: "Stance & Posture", progress: 68 },
-  { name: "Mountain Awareness", progress: 45 },
-];
+  const getColor = (count: number) => {
+    if (count === 0) return "bg-white/[0.04] border border-white/[0.04]";
+    const intensity = count / maxCount;
+    if (intensity < 0.33) return "bg-sky-400/30";
+    if (intensity < 0.66) return "bg-sky-400/60";
+    return "bg-sky-400";
+  };
 
+  const dayLabels = ["S", "M", "T", "W", "T", "F", "S"];
+
+  // Month labels — find first day of each month in dataset
+  const monthLabels: { label: string; colIdx: number }[] = [];
+  weeks.forEach((week, wi) => {
+    week.forEach((day) => {
+      const d = new Date(day.date + "T00:00:00");
+      if (d.getDate() === 1) {
+        monthLabels.push({
+          label: d.toLocaleString("default", { month: "short" }),
+          colIdx: wi,
+        });
+      }
+    });
+  });
+
+  return (
+    <div className="relative">
+      {/* Month labels */}
+      <div className="flex gap-1 mb-1 ml-5">
+        {weeks.map((_, wi) => {
+          const ml = monthLabels.find((m) => m.colIdx === wi);
+          return (
+            <div
+              key={wi}
+              className="flex-1 text-[10px] text-slate-500 truncate"
+            >
+              {ml?.label || ""}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex gap-1">
+        {/* Day labels */}
+        <div className="flex flex-col gap-1 mr-1">
+          {dayLabels.map((d, i) => (
+            <div
+              key={i}
+              className="text-[10px] text-slate-600 w-4 h-3 flex items-center"
+            >
+              {i % 2 === 1 ? d : ""}
+            </div>
+          ))}
+        </div>
+
+        {/* Grid */}
+        {weeks.map((week, wi) => (
+          <div key={wi} className="flex flex-col gap-1 flex-1">
+            {Array.from({ length: 7 }, (_, di) => {
+              const cell = week[di];
+              if (!cell) return <div key={di} className="h-3 rounded-sm" />;
+              return (
+                <motion.div
+                  key={di}
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: (wi * 7 + di) * 0.003 }}
+                  className={`h-3 rounded-sm cursor-pointer transition-all hover:scale-125 hover:brightness-125 ${getColor(
+                    cell.count
+                  )}`}
+                  onMouseEnter={(e) => {
+                    const rect = (
+                      e.target as HTMLElement
+                    ).getBoundingClientRect();
+                    setTooltip({
+                      date: cell.date,
+                      count: cell.count,
+                      x: rect.left,
+                      y: rect.top,
+                    });
+                  }}
+                  onMouseLeave={() => setTooltip(null)}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Tooltip */}
+      <AnimatePresence>
+        {tooltip && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="fixed z-50 pointer-events-none bg-[#0f172a] border border-white/10 rounded-lg px-3 py-2 text-xs shadow-xl"
+            style={{ left: tooltip.x - 60, top: tooltip.y - 48 }}
+          >
+            <span className="font-semibold text-snow">{tooltip.count}</span>
+            <span className="text-slate-400">
+              {" "}
+              lesson{tooltip.count !== 1 ? "s" : ""} on{" "}
+            </span>
+            <span className="text-ice">
+              {new Date(tooltip.date + "T00:00:00").toLocaleDateString(
+                "en-US",
+                {
+                  month: "short",
+                  day: "numeric",
+                }
+              )}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Legend */}
+      <div className="flex items-center gap-1.5 mt-3 justify-end">
+        <span className="text-[10px] text-slate-500">Less</span>
+        {[0, 0.25, 0.5, 0.75, 1].map((v) => (
+          <div
+            key={v}
+            className={`w-3 h-3 rounded-sm ${getColor(v * maxCount)}`}
+          />
+        ))}
+        <span className="text-[10px] text-slate-500">More</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Completion Timeline ───────────────────────────────────────────────────────
+function CompletionTimeline({
+  data,
+}: {
+  data: { date: string; lessonTitle: string; level: string }[];
+}) {
+  if (!data.length) {
+    return (
+      <div className="text-center py-8 text-slate-500 text-sm">
+        <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
+        Complete your first lesson to see your timeline
+      </div>
+    );
+  }
+
+  // Group by date descending
+  const grouped: Record<string, typeof data> = {};
+  [...data].reverse().forEach((item) => {
+    if (!grouped[item.date]) grouped[item.date] = [];
+    grouped[item.date].push(item);
+  });
+
+  return (
+    <div className="space-y-5 max-h-72 overflow-y-auto pr-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
+      {Object.entries(grouped).map(([date, lessons], gi) => (
+        <motion.div
+          key={date}
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.06 * gi }}
+          className="relative"
+        >
+          {/* Date label */}
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-ice/60 shrink-0" />
+            <span className="text-[11px] text-slate-400 font-medium">
+              {new Date(date + "T00:00:00").toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+            <div className="flex-1 h-px bg-white/[0.04]" />
+          </div>
+
+          {/* Lessons on this date */}
+          <div className="ml-3.5 space-y-1.5">
+            {lessons.map((lesson, li) => (
+              <motion.div
+                key={li}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.06 * gi + 0.04 * li }}
+                className="flex items-center gap-2.5 py-1.5 px-3 rounded-lg bg-white/[0.03] border border-white/[0.04] hover:border-white/[0.08] transition-colors"
+              >
+                <div
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                    LEVEL_DOT[lesson.level] || "bg-slate-500"
+                  }`}
+                />
+                <span className="text-sm text-slate-200 flex-1 truncate">
+                  {lesson.lessonTitle}
+                </span>
+                <span
+                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                    lesson.level === "Beginner"
+                      ? "bg-emerald-400/10 text-emerald-400"
+                      : lesson.level === "Intermediate"
+                      ? "bg-sky-400/10 text-sky-400"
+                      : "bg-orange-400/10 text-orange-400"
+                  }`}
+                >
+                  {lesson.level}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function ProgressPage() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch("/api/progress-summary");
-        const data = await res.json();
-        setStats(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchStats();
+  useEffect(() => {
+    fetch("/api/progress-summary")
+      .then((r) => r.json())
+      .then(setStats)
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="relative w-20 h-20 mx-auto">
+            <div className="absolute inset-0 border-4 border-ice/20 rounded-full" />
+            <div className="absolute inset-0 border-4 border-ice rounded-full border-t-transparent animate-spin" />
+          </div>
+          <p className="text-slate-400 mt-4">Loading your progress...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const levelBreakdown = stats?.levelBreakdown || [];
+  const badges = stats?.badges || [];
+  const heatmap = stats?.heatmap || [];
+  const timeline = stats?.timeline || [];
+  const timeTracking = stats?.timeTracking || {};
+  const monthly = stats?.monthlySummary || {};
+  const earnedBadges = badges.filter((b: any) => b.earned).length;
+
+  const formatMinutes = (mins: number) => {
+    if (mins < 60) return `${mins}m`;
+    return `${Math.floor(mins / 60)}h ${
+      mins % 60 > 0 ? `${mins % 60}m` : ""
+    }`.trim();
+  };
+
   return (
     <motion.div
       variants={stagger}
@@ -213,7 +397,7 @@ export default function ProgressPage() {
       animate="animate"
       className="space-y-8"
     >
-      {/* Header */}
+      {/* ── Header ───────────────────────────────────────────────────────────── */}
       <motion.div variants={fadeInUp}>
         <h1 className="text-2xl md:text-3xl font-heading font-bold text-snow">
           Your Mountain Journey
@@ -223,22 +407,21 @@ export default function ProgressPage() {
         </p>
       </motion.div>
 
-      {/* Top Section: Ring + Level Breakdown + Time */}
+      {/* ── Top Row: Ring + Level + Time ──────────────────────────────────────── */}
       <div className="grid md:grid-cols-3 gap-6">
-        {/* Overall Progress Ring */}
+        {/* Overall ring */}
         <motion.div
           variants={fadeInUp}
           className="flex flex-col items-center justify-center rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] p-8"
         >
           <LargeProgressRing progress={stats?.progressPercent || 0} />
-
           <p className="text-sm text-slate-400 mt-4">
             {stats?.completedLessons || 0} of {stats?.totalLessons || 0} lessons
             completed
           </p>
         </motion.div>
 
-        {/* Level Breakdown */}
+        {/* Level breakdown */}
         <motion.div
           variants={fadeInUp}
           className="rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] p-6"
@@ -247,7 +430,7 @@ export default function ProgressPage() {
             Level Breakdown
           </h3>
           <div className="space-y-5">
-            {stats?.levelBreakdown?.map((level: any) => {
+            {levelBreakdown.map((level: any) => {
               const pct =
                 level.total > 0
                   ? Math.round((level.completed / level.total) * 100)
@@ -280,7 +463,7 @@ export default function ProgressPage() {
           </div>
         </motion.div>
 
-        {/* Time Tracking */}
+        {/* Time tracking — all real */}
         <motion.div
           variants={fadeInUp}
           className="rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] p-6"
@@ -292,20 +475,28 @@ export default function ProgressPage() {
             {[
               {
                 label: "Total Time",
-                value: `${(stats?.completedLessons || 0) * 10} min`,
+                value: formatMinutes(timeTracking.totalMinutes || 0),
                 icon: Clock,
               },
-              { label: "This Week", value: "3.2 hours", icon: Calendar },
-              { label: "Avg Session", value: "25 min", icon: Timer },
+              {
+                label: "This Week",
+                value: formatMinutes(timeTracking.weekMinutes || 0),
+                icon: Calendar,
+              },
+              {
+                label: "Avg Session",
+                value: formatMinutes(timeTracking.avgSessionMinutes || 0),
+                icon: Timer,
+              },
             ].map((stat) => (
               <div key={stat.label} className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center shrink-0">
                   <stat.icon className="w-5 h-5 text-slate-400" />
                 </div>
                 <div>
                   <p className="text-xs text-slate-400">{stat.label}</p>
                   <p className="text-lg font-bold font-heading text-snow">
-                    {stat.value}
+                    {stat.value || "—"}
                   </p>
                 </div>
               </div>
@@ -314,48 +505,48 @@ export default function ProgressPage() {
         </motion.div>
       </div>
 
-      {/* Weekly Activity Chart */}
+      {/* ── Activity Heatmap ──────────────────────────────────────────────────── */}
       <motion.div
         variants={fadeInUp}
         className="rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] p-6"
       >
-        <h3 className="text-sm font-heading font-bold text-snow mb-6">
-          Weekly Activity
-        </h3>
-        <div className="flex items-end justify-between gap-3 h-40">
-          {weeklyActivity.map((day, i) => (
-            <div
-              key={day.day}
-              className="flex-1 flex flex-col items-center gap-2"
-            >
-              <span className="text-xs text-slate-400 font-medium">
-                {day.minutes > 0 ? `${day.minutes}m` : ""}
-              </span>
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{
-                  height:
-                    day.minutes > 0
-                      ? `${(day.minutes / maxMinutes) * 100}%`
-                      : "4px",
-                }}
-                transition={{ duration: 0.8, delay: 0.1 * i, ease: "easeOut" }}
-                className={`w-full max-w-[48px] rounded-t-lg ${
-                  day.minutes > 0
-                    ? "bg-gradient-to-t from-ice/60 to-ice"
-                    : "bg-white/[0.06]"
-                }`}
-                style={{ minHeight: day.minutes > 0 ? "8px" : "4px" }}
-              />
-              <span className="text-xs text-slate-500">{day.day}</span>
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-sm font-heading font-bold text-snow">
+              Activity Heatmap
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Last 12 weeks of learning activity
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <Flame className="w-4 h-4 text-orange-400" />
+            {stats?.currentStreak || 0} day streak
+          </div>
         </div>
+        <ActivityHeatmap data={heatmap} />
       </motion.div>
 
-      {/* Two Column: Badges + Skills */}
+      {/* ── Completion Timeline + Badges ──────────────────────────────────────── */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Achievements / Badges */}
+        {/* Timeline */}
+        <motion.div
+          variants={fadeInUp}
+          className="rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] p-6"
+        >
+          <div className="flex items-center gap-2 mb-5">
+            <TrendingUp className="w-5 h-5 text-ice" />
+            <div>
+              <h3 className="text-sm font-heading font-bold text-snow">
+                Completion Timeline
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">Last 30 days</p>
+            </div>
+          </div>
+          <CompletionTimeline data={timeline} />
+        </motion.div>
+
+        {/* Badges */}
         <motion.div
           variants={fadeInUp}
           className="rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] p-6"
@@ -366,104 +557,88 @@ export default function ProgressPage() {
               Achievements
             </h3>
             <span className="text-xs text-slate-400 ml-auto">
-              {badges.filter((b) => b.earned).length}/{badges.length} earned
+              {earnedBadges}/{badges.length} earned
             </span>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {badges.map((badge, i) => (
-              <motion.div
-                key={badge.name}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{
-                  delay: 0.05 * i,
-                  type: badge.earned ? "spring" : "tween",
-                  stiffness: badge.earned ? 300 : undefined,
-                  damping: badge.earned ? 15 : undefined,
-                }}
-                whileHover={badge.earned ? { scale: 1.08 } : {}}
-                className={`flex flex-col items-center gap-2 p-3 rounded-xl border text-center transition-colors ${
-                  badge.earned
-                    ? "bg-gold/5 border-gold/20"
-                    : "bg-white/[0.02] border-white/[0.04] opacity-40"
-                }`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    badge.earned ? "bg-gold/10" : "bg-white/[0.04]"
+            {badges.map((badge: any, i: number) => {
+              const IconComponent = ICON_MAP[badge.icon] || Star;
+              return (
+                <motion.div
+                  key={badge.name}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{
+                    delay: 0.05 * i,
+                    type: badge.earned ? "spring" : "tween",
+                    stiffness: badge.earned ? 300 : undefined,
+                    damping: badge.earned ? 15 : undefined,
+                  }}
+                  whileHover={badge.earned ? { scale: 1.08 } : {}}
+                  title={badge.description}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border text-center transition-colors cursor-default ${
+                    badge.earned
+                      ? "bg-gold/5 border-gold/20"
+                      : "bg-white/[0.02] border-white/[0.04] opacity-40"
                   }`}
                 >
-                  <badge.icon
-                    className={`w-5 h-5 ${
-                      badge.earned ? "text-gold" : "text-slate-600"
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      badge.earned ? "bg-gold/10" : "bg-white/[0.04]"
                     }`}
-                  />
-                </div>
-                <span
-                  className={`text-xs font-medium leading-tight ${
-                    badge.earned ? "text-snow" : "text-slate-600"
-                  }`}
-                >
-                  {badge.name}
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Skills */}
-        <motion.div
-          variants={fadeInUp}
-          className="rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] p-6"
-        >
-          <div className="flex items-center gap-2 mb-5">
-            <Target className="w-5 h-5 text-ice" />
-            <h3 className="text-sm font-heading font-bold text-snow">
-              Skills Breakdown
-            </h3>
-          </div>
-          <div className="space-y-5">
-            {skills.map((skill, i) => (
-              <div key={skill.name}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-300">{skill.name}</span>
-                  <span className="text-xs text-slate-400">
-                    {skill.progress}%
+                  >
+                    <IconComponent
+                      className={`w-5 h-5 ${
+                        badge.earned ? "text-gold" : "text-slate-600"
+                      }`}
+                    />
+                  </div>
+                  <span
+                    className={`text-xs font-medium leading-tight ${
+                      badge.earned ? "text-snow" : "text-slate-600"
+                    }`}
+                  >
+                    {badge.name}
                   </span>
-                </div>
-                <div className="w-full h-2 bg-white/[0.06] rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${skill.progress}%` }}
-                    transition={{
-                      duration: 1,
-                      delay: 0.1 * i,
-                      ease: "easeOut",
-                    }}
-                    className="h-full rounded-full bg-gradient-to-r from-ice to-powder"
-                  />
-                </div>
-              </div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
       </div>
 
-      {/* Monthly Summary */}
+      {/* ── Monthly Summary — all real ────────────────────────────────────────── */}
       <motion.div
         variants={fadeInUp}
-        className="rounded-2xl bg-gradient-to-br from-[#1e293b] via-[#162033] to-[#0c1a2e] border border-white/[0.06] p-6 md:p-8"
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1e293b] via-[#162033] to-[#0c1a2e] border border-white/[0.06] p-6 md:p-8"
       >
         <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-ice/5 to-transparent rounded-full blur-3xl" />
         <h3 className="text-lg font-heading font-bold text-snow mb-4">
-          March Summary
+          {monthly.monthName || "This Month"}
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Lessons This Month", value: "8" },
-            { label: "Time Spent", value: "5.2h" },
-            { label: "Longest Streak", value: "5 days" },
-            { label: "Badges Earned", value: "2" },
+            {
+              label: "Lessons Completed",
+              value: monthly.lessonsCompleted ?? "—",
+            },
+            {
+              label: "Time Spent",
+              value: monthly.watchMinutes
+                ? formatMinutes(monthly.watchMinutes)
+                : "—",
+            },
+            {
+              label: "Current Streak",
+              value:
+                monthly.longestStreak != null
+                  ? `${monthly.longestStreak}d`
+                  : "—",
+            },
+            {
+              label: "Badges Earned",
+              value: monthly.badgesEarned ?? "—",
+            },
           ].map((item) => (
             <div key={item.label} className="text-center">
               <p className="text-2xl font-bold font-heading text-snow">
@@ -472,14 +647,6 @@ export default function ProgressPage() {
               <p className="text-xs text-slate-400 mt-1">{item.label}</p>
             </div>
           ))}
-        </div>
-        <div className="mt-6 pt-4 border-t border-white/[0.06]">
-          <p className="text-sm text-slate-300">
-            You&apos;re in the{" "}
-            <span className="text-ice font-semibold">top 20%</span> of learners
-            this month. Keep up the amazing work and you&apos;ll be ready for
-            intermediate terrain by next month.
-          </p>
         </div>
       </motion.div>
     </motion.div>

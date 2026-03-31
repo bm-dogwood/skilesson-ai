@@ -9,16 +9,14 @@ import {
   CheckCircle2,
   PlayCircle,
   Lock,
-  Filter,
   X,
   ChevronDown,
   BookOpen,
-  TrendingUp,
-  Sparkles,
   Mountain,
   LayoutGrid,
   List,
-  Award,
+  SlidersHorizontal,
+  Play,
 } from "lucide-react";
 
 type Lesson = {
@@ -36,25 +34,38 @@ type Lesson = {
   }[];
 };
 
-const levelColors = {
-  Beginner: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  Intermediate: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  Advanced: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-};
-
-const sportIcons = {
-  Skiing: Mountain,
-  Snowboarding: TrendingUp,
+const levelConfig = {
+  Beginner: {
+    pill: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
+    bar: "from-emerald-400 to-teal-400",
+    dot: "bg-emerald-400",
+  },
+  Intermediate: {
+    pill: "bg-sky-400/10 text-sky-400 border-sky-400/20",
+    bar: "from-sky-400 to-blue-400",
+    dot: "bg-sky-400",
+  },
+  Advanced: {
+    pill: "bg-orange-400/10 text-orange-400 border-orange-400/20",
+    bar: "from-orange-400 to-red-400",
+    dot: "bg-orange-400",
+  },
 };
 
 type ViewMode = "grid" | "list";
 type CompletionFilter = "All" | "Completed" | "In Progress" | "Not Started";
 
+const stagger = { animate: { transition: { staggerChildren: 0.06 } } };
+const fadeUp = {
+  initial: { opacity: 0, y: 18 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.4 },
+};
+
 export default function LessonsClient() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasSubscription, setHasSubscription] = useState(false);
-
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState("All");
   const [sportFilter, setSportFilter] = useState("All");
@@ -72,51 +83,34 @@ export default function LessonsClient() {
     );
   };
 
-  const getStatus = (lesson: Lesson) => {
-    const p = lesson.progress?.[0];
-    if (!p) return "NOT_STARTED";
-    return p.status || "NOT_STARTED";
-  };
+  const getStatus = (lesson: Lesson) =>
+    lesson.progress?.[0]?.status || "NOT_STARTED";
 
   useEffect(() => {
-    const fetchLessons = async () => {
-      try {
-        const res = await fetch("/api/lessons-user");
-        const data = await res.json();
+    fetch("/api/lessons-user")
+      .then((r) => r.json())
+      .then((data) => {
         setLessons(data.lessons || []);
         setHasSubscription(data.hasSubscription);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLessons();
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = useMemo(() => {
     return lessons.filter((l) => {
-      // Search filter
       if (search && !l.title.toLowerCase().includes(search.toLowerCase()))
         return false;
-
-      // Level filter
       if (levelFilter !== "All" && l.level !== levelFilter) return false;
-
-      // Sport filter
       if (sportFilter !== "All" && l.sport !== sportFilter) return false;
-
-      // Completion filter
       if (completionFilter !== "All") {
-        const status = getStatus(l);
-        if (completionFilter === "Completed" && status !== "COMPLETED")
+        const s = getStatus(l);
+        if (completionFilter === "Completed" && s !== "COMPLETED") return false;
+        if (completionFilter === "In Progress" && s !== "IN_PROGRESS")
           return false;
-        if (completionFilter === "In Progress" && status !== "IN_PROGRESS")
-          return false;
-        if (completionFilter === "Not Started" && status !== "NOT_STARTED")
+        if (completionFilter === "Not Started" && s !== "NOT_STARTED")
           return false;
       }
-
       return true;
     });
   }, [lessons, search, levelFilter, sportFilter, completionFilter]);
@@ -130,16 +124,24 @@ export default function LessonsClient() {
 
   const continueWatching = lessons.filter((l) => {
     const p = l.progress?.[0];
-    return p && p.timestamp && p.timestamp > 5 && p.status !== "COMPLETED";
+    return p?.timestamp && p.timestamp > 5 && p.status !== "COMPLETED";
   });
 
+  const completedCount = lessons.filter(
+    (l) => getStatus(l) === "COMPLETED"
+  ).length;
+  const inProgressCount = lessons.filter(
+    (l) => getStatus(l) === "IN_PROGRESS"
+  ).length;
+
+  // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="relative w-20 h-20 mx-auto">
-            <div className="absolute inset-0 border-4 border-ice/20 rounded-full"></div>
-            <div className="absolute inset-0 border-4 border-ice rounded-full border-t-transparent animate-spin"></div>
+            <div className="absolute inset-0 border-4 border-ice/20 rounded-full" />
+            <div className="absolute inset-0 border-4 border-ice rounded-full border-t-transparent animate-spin" />
           </div>
           <p className="text-slate-400 mt-4">Loading your lessons...</p>
         </div>
@@ -147,26 +149,23 @@ export default function LessonsClient() {
     );
   }
 
+  // ── No Subscription ───────────────────────────────────────────────────────
   if (!hasSubscription) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] text-center">
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="relative"
+          className="w-20 h-20 rounded-2xl bg-ice/10 border border-ice/20 flex items-center justify-center mb-6"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-ice/20 to-purple-500/20 blur-3xl rounded-full"></div>
-          <Lock className="w-20 h-20 text-ice mb-6 relative" />
+          <Lock className="w-9 h-9 text-ice" />
         </motion.div>
-
         <h2 className="text-3xl font-bold text-white mb-3">
           Unlock Your Potential
         </h2>
         <p className="text-slate-400 mb-8 max-w-md">
-          Choose a plan to access our complete library of premium lessons and
-          start your journey to mastery.
+          Choose a plan to access our complete library of premium lessons.
         </p>
-
         <Link href="/pricing">
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -181,94 +180,90 @@ export default function LessonsClient() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header Section */}
-      <div className="flex justify-between items-end">
+    <motion.div
+      variants={stagger}
+      initial="initial"
+      animate="animate"
+      className="space-y-8"
+    >
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      <motion.div
+        variants={fadeUp}
+        className="flex flex-col sm:flex-row sm:items-end justify-between gap-4"
+      >
         <div>
-          <motion.h1
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-3xl font-bold bg-gradient-to-r from-white to-ice bg-clip-text text-transparent"
-          >
-            Your Lesson Library
-          </motion.h1>
-          <p className="text-slate-400 mt-2">
-            {filtered.length} {filtered.length === 1 ? "lesson" : "lessons"}{" "}
-            available
+          <h1 className="text-2xl md:text-3xl font-heading font-bold text-snow">
+            Lesson Library
+          </h1>
+          <p className="text-slate-400 mt-1">
+            {lessons.length} lessons · {completedCount} completed ·{" "}
+            {inProgressCount} in progress
           </p>
         </div>
 
-        <div className="flex gap-2">
-          {/* View Toggle */}
-          <div className="flex bg-[#1e293b] rounded-xl p-1">
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`p-2 rounded-lg transition-all ${
-                viewMode === "grid"
-                  ? "bg-ice text-black"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-2 rounded-lg transition-all ${
-                viewMode === "list"
-                  ? "bg-ice text-black"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <List className="w-4 h-4" />
-            </button>
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex bg-[#1e293b]/60 border border-white/[0.06] rounded-xl p-1">
+            {(["grid", "list"] as ViewMode[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => setViewMode(v)}
+                className={`p-2 rounded-lg transition-all ${
+                  viewMode === v
+                    ? "bg-ice text-navy shadow-sm"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {v === "grid" ? (
+                  <LayoutGrid className="w-4 h-4" />
+                ) : (
+                  <List className="w-4 h-4" />
+                )}
+              </button>
+            ))}
           </div>
 
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
               showFilters
-                ? "bg-ice text-black"
-                : "bg-[#1e293b] text-slate-300 hover:bg-slate-700"
+                ? "bg-ice/15 border-ice/30 text-ice"
+                : "bg-[#1e293b]/60 border-white/[0.06] text-slate-300 hover:border-white/[0.12]"
             }`}
           >
-            <Filter className="w-4 h-4" />
-            <span>Filters</span>
+            <SlidersHorizontal className="w-4 h-4" />
+            Filters
             <ChevronDown
-              className={`w-4 h-4 transition-transform ${
+              className={`w-3.5 h-3.5 transition-transform ${
                 showFilters ? "rotate-180" : ""
               }`}
             />
           </motion.button>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Search Bar */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative"
-      >
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+      {/* ── Search ──────────────────────────────────────────────────────────── */}
+      <motion.div variants={fadeUp} className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
           type="text"
-          placeholder="Search by title..."
+          placeholder="Search lessons..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 rounded-xl bg-[#1e293b] text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-ice/50 transition-all"
+          className="w-full pl-11 pr-10 py-3 rounded-xl bg-[#1e293b]/60 border border-white/[0.06] text-snow placeholder:text-slate-500 focus:outline-none focus:border-ice/30 transition-all text-sm"
         />
         {search && (
           <button
             onClick={() => setSearch("")}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         )}
       </motion.div>
 
-      {/* Filters Panel */}
+      {/* ── Filter Panel ─────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {showFilters && (
           <motion.div
@@ -277,378 +272,364 @@ export default function LessonsClient() {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="bg-[#1e293b] rounded-xl p-6 space-y-4">
+            <div className="rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] p-6 space-y-5">
               <div className="flex justify-between items-center">
-                <h3 className="text-white font-semibold">Filter Lessons</h3>
+                <h3 className="text-sm font-heading font-bold text-snow">
+                  Filter Lessons
+                </h3>
                 <button
                   onClick={resetFilters}
-                  className="text-sm text-ice hover:text-ice/80 transition-colors"
+                  className="text-xs text-ice hover:text-ice/70 transition-colors"
                 >
                   Reset all
                 </button>
               </div>
-
-              <div className="grid sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm text-slate-400 mb-2 block">
-                    Difficulty Level
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {["All", "Beginner", "Intermediate", "Advanced"].map(
-                      (level) => (
+              <div className="grid sm:grid-cols-3 gap-6">
+                {[
+                  {
+                    label: "Level",
+                    options: ["All", "Beginner", "Intermediate", "Advanced"],
+                    value: levelFilter,
+                    set: setLevelFilter,
+                  },
+                  {
+                    label: "Sport",
+                    options: ["All", "Skiing", "Snowboarding"],
+                    value: sportFilter,
+                    set: setSportFilter,
+                  },
+                  {
+                    label: "Status",
+                    options: ["All", "Completed", "In Progress", "Not Started"],
+                    value: completionFilter,
+                    set: (v: string) =>
+                      setCompletionFilter(v as CompletionFilter),
+                  },
+                ].map(({ label, options, value, set }) => (
+                  <div key={label}>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-2.5">
+                      {label}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {options.map((opt) => (
                         <button
-                          key={level}
-                          onClick={() => setLevelFilter(level)}
-                          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-                            levelFilter === level
-                              ? "bg-ice text-black font-medium"
-                              : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                          key={opt}
+                          onClick={() => set(opt)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                            value === opt
+                              ? "bg-ice/15 border-ice/30 text-ice"
+                              : "bg-white/[0.03] border-white/[0.06] text-slate-400 hover:border-white/[0.12] hover:text-slate-200"
                           }`}
                         >
-                          {level}
+                          {opt}
                         </button>
-                      )
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </div>
-
-                <div>
-                  <label className="text-sm text-slate-400 mb-2 block">
-                    Sport Type
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {["All", "Skiing", "Snowboarding"].map((sport) => (
-                      <button
-                        key={sport}
-                        onClick={() => setSportFilter(sport)}
-                        className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-                          sportFilter === sport
-                            ? "bg-ice text-black font-medium"
-                            : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                        }`}
-                      >
-                        {sport}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm text-slate-400 mb-2 block">
-                    Progress Status
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {["All", "Completed", "In Progress", "Not Started"].map(
-                      (status) => (
-                        <button
-                          key={status}
-                          onClick={() =>
-                            setCompletionFilter(status as CompletionFilter)
-                          }
-                          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-                            completionFilter === status
-                              ? "bg-ice text-black font-medium"
-                              : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                          }`}
-                        >
-                          {status}
-                        </button>
-                      )
-                    )}
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Continue Watching Section */}
+      {/* ── Continue Watching ────────────────────────────────────────────────── */}
       {continueWatching.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-white">Continue Watching</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <motion.div variants={fadeUp} className="space-y-4">
+          <h2 className="text-base font-heading font-bold text-snow flex items-center gap-2">
+            <div className="w-1.5 h-4 rounded-full bg-ice" />
+            Continue Watching
+          </h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {continueWatching.map((lesson) => {
-              const percent = getProgressPercent(lesson);
+              const pct = getProgressPercent(lesson);
+              const cfg = levelConfig[lesson.level];
               return (
                 <Link key={lesson.id} href={`/dashboard/lessons/${lesson.id}`}>
                   <motion.div
-                    whileHover={{ y: -2 }}
-                    className="bg-[#1e293b] rounded-xl overflow-hidden"
+                    whileHover={{ y: -3 }}
+                    className="group relative rounded-2xl overflow-hidden bg-[#1e293b]/50 border border-white/[0.06] hover:border-ice/20 transition-all"
                   >
-                    <div className="relative h-40">
-                      <img
-                        src={lesson.thumbnailUrl || "/placeholder.jpg"}
-                        alt={lesson.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
+                    <div className="relative h-36 bg-[#0f172a]">
+                      {lesson.thumbnailUrl ? (
+                        <img
+                          src={lesson.thumbnailUrl}
+                          alt={lesson.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Mountain className="w-8 h-8 text-slate-600" />
+                        </div>
+                      )}
+                      {/* Play overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+                        <div className="w-10 h-10 rounded-full bg-ice/90 flex items-center justify-center shadow-lg">
+                          <Play className="w-4 h-4 text-navy ml-0.5" />
+                        </div>
+                      </div>
+                      {/* Progress bar */}
+                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
                         <div
-                          className="h-full bg-ice transition-all"
-                          style={{ width: `${percent}%` }}
+                          className={`h-full bg-gradient-to-r ${cfg.bar} transition-all`}
+                          style={{ width: `${pct}%` }}
                         />
                       </div>
                     </div>
-                    <div className="p-4">
-                      <h3 className="text-white font-semibold">
-                        {lesson.title}
-                      </h3>
-                      <p className="text-xs text-slate-400 mt-1">
-                        {percent}% watched
-                      </p>
+                    <div className="p-4 flex items-center justify-between">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-snow truncate">
+                          {lesson.title}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {pct}% complete
+                        </p>
+                      </div>
+                      <span
+                        className={`ml-3 shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${cfg.pill}`}
+                      >
+                        {lesson.level}
+                      </span>
                     </div>
                   </motion.div>
                 </Link>
               );
             })}
           </div>
-        </div>
+        </motion.div>
       )}
 
-      {/* Lessons Grid/List View */}
-      {filtered.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-20"
-        >
-          <BookOpen className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">
-            No lessons found
-          </h3>
-          <p className="text-slate-400">
-            Try adjusting your search or filters to find what you're looking
-            for.
-          </p>
-          <button
-            onClick={resetFilters}
-            className="mt-4 px-4 py-2 bg-ice/10 text-ice rounded-lg hover:bg-ice/20 transition-colors"
-          >
-            Clear filters
-          </button>
-        </motion.div>
-      ) : viewMode === "grid" ? (
-        // Grid View
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((lesson, i) => {
-            const SportIcon = sportIcons[lesson.sport];
-            const status = getStatus(lesson);
-            const percent = getProgressPercent(lesson);
+      {/* ── All Lessons ──────────────────────────────────────────────────────── */}
+      <motion.div variants={fadeUp} className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-heading font-bold text-snow flex items-center gap-2">
+            <div className="w-1.5 h-4 rounded-full bg-slate-600" />
+            All Lessons
+            <span className="text-slate-500 font-normal text-sm">
+              ({filtered.length})
+            </span>
+          </h2>
+        </div>
 
-            return (
-              <Link key={lesson.id} href={`/dashboard/lessons/${lesson.id}`}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  whileHover={{ y: -4 }}
-                  className="group cursor-pointer"
-                >
-                  <div className="bg-[#1e293b] rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-ice/10 transition-all duration-300">
-                    <div className="relative h-48 overflow-hidden">
+        {filtered.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center py-20 text-center"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-4">
+              <BookOpen className="w-6 h-6 text-slate-600" />
+            </div>
+            <h3 className="text-base font-semibold text-snow mb-1">
+              No lessons found
+            </h3>
+            <p className="text-slate-500 text-sm mb-4">
+              Try adjusting your search or filters.
+            </p>
+            <button
+              onClick={resetFilters}
+              className="px-4 py-2 rounded-xl bg-ice/10 text-ice text-sm font-medium hover:bg-ice/20 transition-colors"
+            >
+              Clear filters
+            </button>
+          </motion.div>
+        ) : viewMode === "grid" ? (
+          <motion.div
+            variants={stagger}
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"
+          >
+            {filtered.map((lesson, i) => {
+              const status = getStatus(lesson);
+              const pct = getProgressPercent(lesson);
+              const cfg = levelConfig[lesson.level];
+
+              return (
+                <Link key={lesson.id} href={`/dashboard/lessons/${lesson.id}`}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    whileHover={{ y: -4 }}
+                    className="group rounded-2xl overflow-hidden bg-[#1e293b]/50 border border-white/[0.06] hover:border-white/[0.14] hover:shadow-xl hover:shadow-black/30 transition-all duration-300 cursor-pointer"
+                  >
+                    {/* Thumbnail */}
+                    <div className="relative h-44 bg-[#0f172a] overflow-hidden">
                       {lesson.thumbnailUrl ? (
                         <img
                           src={lesson.thumbnailUrl}
                           alt={lesson.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-600 opacity-90"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
-                          <Mountain className="w-12 h-12 text-slate-600" />
+                        <div className="w-full h-full bg-gradient-to-br from-[#1e293b] to-[#0c1a2e] flex items-center justify-center">
+                          <Mountain className="w-10 h-10 text-slate-700" />
                         </div>
                       )}
 
-                      {/* Progress Bar */}
-                      {percent > 0 && (
-                        <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
+                      {/* Dark gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/80 via-transparent to-transparent" />
+
+                      {/* Play button on hover */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <motion.div
+                          initial={{ scale: 0.8 }}
+                          whileHover={{ scale: 1.05 }}
+                          className="w-12 h-12 rounded-full bg-ice/90 backdrop-blur-sm flex items-center justify-center shadow-lg shadow-black/40"
+                        >
+                          <Play className="w-5 h-5 text-navy ml-0.5" />
+                        </motion.div>
+                      </div>
+
+                      {/* Progress bar */}
+                      {pct > 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10">
                           <div
-                            className="h-full bg-ice transition-all"
-                            style={{ width: `${percent}%` }}
+                            className={`h-full bg-gradient-to-r ${cfg.bar}`}
+                            style={{ width: `${pct}%` }}
                           />
                         </div>
                       )}
 
-                      {/* Status Badge */}
-                      <div className="absolute top-3 right-3">
-                        {status === "COMPLETED" && (
-                          <div className="flex items-center gap-1 bg-green-500/20 backdrop-blur-sm px-2 py-1 rounded-lg text-green-400 text-xs">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Completed
-                          </div>
-                        )}
-                        {status === "IN_PROGRESS" && (
-                          <div className="flex items-center gap-1 bg-blue-500/20 backdrop-blur-sm px-2 py-1 rounded-lg text-blue-400 text-xs">
-                            <PlayCircle className="w-3 h-3" />
-                            In Progress
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Level Badge */}
+                      {/* Top badges */}
                       <div className="absolute top-3 left-3">
                         <span
-                          className={`px-2 py-1 rounded-lg text-xs font-medium border backdrop-blur-sm ${
-                            levelColors[lesson.level]
-                          }`}
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border backdrop-blur-sm ${cfg.pill}`}
                         >
                           {lesson.level}
                         </span>
                       </div>
-
-                      {/* Hover Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="absolute bottom-4 left-4 right-4">
-                          <div className="flex items-center gap-2 text-white">
-                            <PlayCircle className="w-5 h-5" />
-                            <span className="text-sm">Start Lesson</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-5">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          {SportIcon && (
-                            <SportIcon className="w-4 h-4 text-ice" />
-                          )}
-                          <span className="text-xs text-ice font-medium">
-                            {lesson.sport}
+                      <div className="absolute top-3 right-3">
+                        {status === "COMPLETED" && (
+                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/15 border border-emerald-400/30 text-emerald-400 text-[10px] font-semibold backdrop-blur-sm">
+                            <CheckCircle2 className="w-2.5 h-2.5" />
+                            Done
                           </span>
-                        </div>
-                        {lesson.duration && (
-                          <div className="flex items-center gap-1 text-xs text-slate-500">
-                            <Clock className="w-3 h-3" />
-                            <span>{lesson.duration} min</span>
-                          </div>
+                        )}
+                        {status === "IN_PROGRESS" && (
+                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-ice/15 border border-ice/30 text-ice text-[10px] font-semibold backdrop-blur-sm">
+                            <PlayCircle className="w-2.5 h-2.5" />
+                            {pct}%
+                          </span>
                         )}
                       </div>
-
-                      <h3 className="text-white font-semibold text-lg mb-2 group-hover:text-ice transition-colors">
-                        {lesson.title}
-                      </h3>
-
-                      <p className="text-slate-400 text-sm line-clamp-2">
-                        {lesson.description ||
-                          "Learn essential techniques and improve your skills with this comprehensive lesson."}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              </Link>
-            );
-          })}
-        </div>
-      ) : (
-        // List View
-        <div className="space-y-3">
-          {filtered.map((lesson, i) => {
-            const SportIcon = sportIcons[lesson.sport];
-            const status = getStatus(lesson);
-            const percent = getProgressPercent(lesson);
-
-            return (
-              <Link key={lesson.id} href={`/dashboard/lessons/${lesson.id}`}>
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  whileHover={{ x: 4 }}
-                  className="bg-[#1e293b] rounded-xl overflow-hidden hover:shadow-xl hover:shadow-ice/5 transition-all"
-                >
-                  <div className="flex gap-4 p-4">
-                    {/* Thumbnail */}
-                    <div className="relative w-32 h-24 rounded-lg overflow-hidden flex-shrink-0">
-                      {lesson.thumbnailUrl ? (
-                        <img
-                          src={lesson.thumbnailUrl}
-                          alt={lesson.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
-                          <Mountain className="w-6 h-6 text-slate-600" />
-                        </div>
-                      )}
-                      {percent > 0 && (
-                        <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
-                          <div
-                            className="h-full bg-ice"
-                            style={{ width: `${percent}%` }}
-                          />
-                        </div>
-                      )}
                     </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span
-                          className={`px-2 py-0.5 rounded-lg text-xs font-medium ${
-                            levelColors[lesson.level]
-                          }`}
-                        >
-                          {lesson.level}
+                    {/* Card body */}
+                    <div className="p-4 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-ice uppercase tracking-wider">
+                          {lesson.sport}
                         </span>
-                        <div className="flex items-center gap-1">
-                          {SportIcon && (
-                            <SportIcon className="w-3 h-3 text-ice" />
-                          )}
-                          <span className="text-xs text-slate-400">
-                            {lesson.sport}
-                          </span>
-                        </div>
                         {lesson.duration && (
-                          <div className="flex items-center gap-1 text-xs text-slate-500">
+                          <div className="flex items-center gap-1 text-[11px] text-slate-500">
                             <Clock className="w-3 h-3" />
-                            <span>{lesson.duration} min</span>
+                            {lesson.duration} min
                           </div>
                         )}
                       </div>
 
-                      <h3 className="text-white font-semibold mb-1 group-hover:text-ice transition-colors">
+                      <h3 className="text-sm font-semibold text-snow leading-snug group-hover:text-ice transition-colors duration-200 line-clamp-2">
                         {lesson.title}
                       </h3>
 
-                      <p className="text-slate-400 text-sm line-clamp-1">
+                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
                         {lesson.description ||
                           "Learn essential techniques and improve your skills."}
                       </p>
+                    </div>
+                  </motion.div>
+                </Link>
+              );
+            })}
+          </motion.div>
+        ) : (
+          // List view
+          <div className="space-y-2">
+            {filtered.map((lesson, i) => {
+              const status = getStatus(lesson);
+              const pct = getProgressPercent(lesson);
+              const cfg = levelConfig[lesson.level];
 
-                      {/* Status Indicator */}
-                      <div className="flex items-center gap-3 mt-2">
+              return (
+                <Link key={lesson.id} href={`/dashboard/lessons/${lesson.id}`}>
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    whileHover={{ x: 3 }}
+                    className="group flex items-center gap-4 p-3 rounded-xl bg-[#1e293b]/40 border border-white/[0.05] hover:border-white/[0.1] hover:bg-[#1e293b]/70 transition-all cursor-pointer"
+                  >
+                    {/* Thumbnail */}
+                    <div className="relative w-24 h-16 rounded-lg overflow-hidden shrink-0 bg-[#0f172a]">
+                      {lesson.thumbnailUrl ? (
+                        <img
+                          src={lesson.thumbnailUrl}
+                          alt={lesson.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-400 opacity-80"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Mountain className="w-5 h-5 text-slate-700" />
+                        </div>
+                      )}
+                      {pct > 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10">
+                          <div
+                            className={`h-full bg-gradient-to-r ${cfg.bar}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${cfg.pill}`}
+                        >
+                          {lesson.level}
+                        </span>
+                        <span className="text-[11px] text-ice font-medium">
+                          {lesson.sport}
+                        </span>
+                        {lesson.duration && (
+                          <span className="text-[11px] text-slate-500 flex items-center gap-0.5">
+                            <Clock className="w-2.5 h-2.5" />
+                            {lesson.duration}m
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold text-snow truncate group-hover:text-ice transition-colors">
+                        {lesson.title}
+                      </p>
+                      <div>
                         {status === "COMPLETED" && (
-                          <div className="flex items-center gap-1 text-green-400 text-xs">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Completed
-                          </div>
+                          <span className="flex items-center gap-1 text-[11px] text-emerald-400">
+                            <CheckCircle2 className="w-3 h-3" /> Completed
+                          </span>
                         )}
                         {status === "IN_PROGRESS" && (
-                          <div className="flex items-center gap-1 text-blue-400 text-xs">
-                            <PlayCircle className="w-3 h-3" />
-                            {percent}% complete
-                          </div>
+                          <span className="text-[11px] text-ice">
+                            {pct}% complete
+                          </span>
                         )}
                         {status === "NOT_STARTED" && (
-                          <div className="flex items-center gap-1 text-slate-400 text-xs">
-                            <PlayCircle className="w-3 h-3" />
+                          <span className="text-[11px] text-slate-500">
                             Not started
-                          </div>
+                          </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Action */}
-                    <div className="flex items-center">
-                      <PlayCircle className="w-5 h-5 text-slate-500 group-hover:text-ice transition-colors" />
-                    </div>
-                  </div>
-                </motion.div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-    </div>
+                    <PlayCircle className="w-5 h-5 text-slate-600 group-hover:text-ice transition-colors shrink-0" />
+                  </motion.div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
   );
 }

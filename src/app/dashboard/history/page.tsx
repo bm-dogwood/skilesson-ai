@@ -1,8 +1,26 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Camera,
+  Video,
+  Clock,
+  ChevronDown,
+  X,
+  CheckCircle2,
+  Loader2,
+  Star,
+  Lightbulb,
+  Wrench,
+  BookOpen,
+  AlertTriangle,
+  ArrowUpDown,
+  SlidersHorizontal,
+} from "lucide-react";
 
-// Types
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface HistoryItem {
   id: string;
   mediaType: "image" | "video";
@@ -18,163 +36,379 @@ interface HistoryItem {
 }
 
 type SortOption = "newest" | "oldest" | "status";
+type FilterOption = "all" | "pending" | "completed" | "reviewed";
 
-// Helper function to detect and format JSON feedback
-const formatFeedback = (feedback: string) => {
-  if (!feedback) return null;
-
-  // Try to parse as JSON
-  try {
-    const parsed = JSON.parse(feedback);
-
-    // If it's an object, format it nicely
-    if (typeof parsed === "object" && parsed !== null) {
-      return (
-        <div className="space-y-4">
-          {/* Positive Feedback */}
-          {parsed.positive && (
-            <div className="bg-green-500/10 border-l-4 border-green-500 p-4 rounded-r-lg">
-              <p className="text-green-400 font-semibold text-sm uppercase tracking-wide mb-1">
-                ✓ What you're doing well
-              </p>
-              <p className="text-gray-300">{parsed.positive}</p>
-            </div>
-          )}
-
-          {/* Correction */}
-          {parsed.correction && (
-            <div className="bg-yellow-500/10 border-l-4 border-yellow-500 p-4 rounded-r-lg">
-              <p className="text-yellow-400 font-semibold text-sm uppercase tracking-wide mb-1">
-                ⚠ Area for Improvement
-              </p>
-              <p className="text-gray-300">{parsed.correction}</p>
-            </div>
-          )}
-
-          {/* How to Fix */}
-          {parsed.fix && (
-            <div className="bg-blue-500/10 border-l-4 border-blue-500 p-4 rounded-r-lg">
-              <p className="text-blue-400 font-semibold text-sm uppercase tracking-wide mb-1">
-                🔧 How to Fix
-              </p>
-              <p className="text-gray-300">{parsed.fix}</p>
-            </div>
-          )}
-
-          {/* Why It Matters */}
-          {parsed.why && (
-            <div className="bg-purple-500/10 border-l-4 border-purple-500 p-4 rounded-r-lg">
-              <p className="text-purple-400 font-semibold text-sm uppercase tracking-wide mb-1">
-                💡 Why It Matters
-              </p>
-              <p className="text-gray-300">{parsed.why}</p>
-            </div>
-          )}
-
-          {/* Main Feedback */}
-          {parsed.aiFeedback && !parsed.positive && !parsed.correction && (
-            <p className="text-gray-300 leading-relaxed">{parsed.aiFeedback}</p>
-          )}
-
-          {/* Additional Fields */}
-          {parsed.lessons && parsed.lessons.length > 0 && (
-            <div className="bg-cyan-500/10 border-l-4 border-cyan-500 p-4 rounded-r-lg">
-              <p className="text-cyan-400 font-semibold text-sm uppercase tracking-wide mb-2">
-                🎯 Recommended Lessons
-              </p>
-              <ul className="space-y-1">
-                {parsed.lessons.map((lesson: string, idx: number) => (
-                  <li
-                    key={idx}
-                    className="text-gray-300 flex items-start gap-2"
-                  >
-                    <span className="text-cyan-400">•</span>
-                    <span>{lesson}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Tips */}
-          {parsed.tips && parsed.tips.length > 0 && (
-            <div className="bg-emerald-500/10 border-l-4 border-emerald-500 p-4 rounded-r-lg">
-              <p className="text-emerald-400 font-semibold text-sm uppercase tracking-wide mb-2">
-                💪 Pro Tips
-              </p>
-              <ul className="space-y-1">
-                {parsed.tips.map((tip: string, idx: number) => (
-                  <li
-                    key={idx}
-                    className="text-gray-300 flex items-start gap-2"
-                  >
-                    <span className="text-emerald-400">•</span>
-                    <span>{tip}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Common Mistakes */}
-          {parsed.mistakes && parsed.mistakes.length > 0 && (
-            <div className="bg-red-500/10 border-l-4 border-red-500 p-4 rounded-r-lg">
-              <p className="text-red-400 font-semibold text-sm uppercase tracking-wide mb-2">
-                ⚠️ Common Mistakes to Avoid
-              </p>
-              <ul className="space-y-1">
-                {parsed.mistakes.map((mistake: string, idx: number) => (
-                  <li
-                    key={idx}
-                    className="text-gray-300 flex items-start gap-2"
-                  >
-                    <span className="text-red-400">•</span>
-                    <span>{mistake}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Drill Suggestions */}
-          {parsed.drills && parsed.drills.length > 0 && (
-            <div className="bg-orange-500/10 border-l-4 border-orange-500 p-4 rounded-r-lg">
-              <p className="text-orange-400 font-semibold text-sm uppercase tracking-wide mb-2">
-                🏋️ Recommended Drills
-              </p>
-              <ul className="space-y-1">
-                {parsed.drills.map((drill: string, idx: number) => (
-                  <li
-                    key={idx}
-                    className="text-gray-300 flex items-start gap-2"
-                  >
-                    <span className="text-orange-400">•</span>
-                    <span>{drill}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      );
-    }
-  } catch (e) {
-    // Not JSON, return as plain text
-    return <p className="text-gray-300 leading-relaxed">{feedback}</p>;
-  }
-
-  // Fallback: return as plain text
-  return <p className="text-gray-300 leading-relaxed">{feedback}</p>;
+const fadeInUp = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.4 },
 };
 
+const stagger = {
+  animate: { transition: { staggerChildren: 0.07 } },
+};
+
+// ─── Feedback Parser ───────────────────────────────────────────────────────────
+function ParsedFeedback({
+  feedback,
+  compact = false,
+}: {
+  feedback: string;
+  compact?: boolean;
+}) {
+  if (!feedback) return null;
+
+  let parsed: any = null;
+  try {
+    parsed = JSON.parse(feedback);
+  } catch {
+    return (
+      <p
+        className={`text-slate-300 leading-relaxed ${
+          compact ? "line-clamp-2 text-sm" : ""
+        }`}
+      >
+        {feedback}
+      </p>
+    );
+  }
+
+  if (compact) {
+    const summary =
+      parsed.correction || parsed.positive || parsed.aiFeedback || "";
+    return <p className="text-slate-400 text-sm line-clamp-2">{summary}</p>;
+  }
+
+  const sections = [
+    {
+      key: "positive",
+      label: "What you're doing well",
+      icon: Star,
+      color: "text-emerald-400",
+      bg: "bg-emerald-400/8",
+      border: "border-emerald-400/20",
+    },
+    {
+      key: "correction",
+      label: "Area for Improvement",
+      icon: AlertTriangle,
+      color: "text-amber-400",
+      bg: "bg-amber-400/8",
+      border: "border-amber-400/20",
+    },
+    {
+      key: "fix",
+      label: "How to Fix",
+      icon: Wrench,
+      color: "text-sky-400",
+      bg: "bg-sky-400/8",
+      border: "border-sky-400/20",
+    },
+    {
+      key: "why",
+      label: "Why It Matters",
+      icon: Lightbulb,
+      color: "text-purple-400",
+      bg: "bg-purple-400/8",
+      border: "border-purple-400/20",
+    },
+  ];
+
+  return (
+    <div className="space-y-3">
+      {sections.map(({ key, label, icon: Icon, color, bg, border }) =>
+        parsed[key] ? (
+          <div key={key} className={`rounded-xl border ${border} ${bg} p-4`}>
+            <div className={`flex items-center gap-2 mb-1.5 ${color}`}>
+              <Icon className="w-3.5 h-3.5" />
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                {label}
+              </span>
+            </div>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              {parsed[key]}
+            </p>
+          </div>
+        ) : null
+      )}
+
+      {parsed.lessons?.length > 0 && (
+        <div className="rounded-xl border border-ice/20 bg-ice/8 p-4">
+          <div className="flex items-center gap-2 mb-2 text-ice">
+            <BookOpen className="w-3.5 h-3.5" />
+            <span className="text-xs font-semibold uppercase tracking-wider">
+              Recommended Lessons
+            </span>
+          </div>
+          <ul className="space-y-1">
+            {parsed.lessons.map((lesson: string, i: number) => (
+              <li
+                key={i}
+                className="flex items-start gap-2 text-sm text-slate-300"
+              >
+                <span className="text-ice mt-0.5">·</span>
+                {lesson}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Status Badge ──────────────────────────────────────────────────────────────
+function StatusBadge({ status }: { status: HistoryItem["status"] }) {
+  const config = {
+    pending: {
+      label: "Processing",
+      icon: Loader2,
+      cls: "bg-amber-400/10 text-amber-400 border-amber-400/20",
+      spin: true,
+    },
+    completed: {
+      label: "AI Analyzed",
+      icon: CheckCircle2,
+      cls: "bg-ice/10 text-ice border-ice/20",
+      spin: false,
+    },
+    reviewed: {
+      label: "Instructor Reviewed",
+      icon: Star,
+      cls: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
+      spin: false,
+    },
+  }[status] || {
+    label: status,
+    icon: Clock,
+    cls: "bg-slate-400/10 text-slate-400 border-slate-400/20",
+    spin: false,
+  };
+
+  const Icon = config.icon;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${config.cls}`}
+    >
+      <Icon className={`w-3 h-3 ${config.spin ? "animate-spin" : ""}`} />
+      {config.label}
+    </span>
+  );
+}
+
+// ─── History Card ──────────────────────────────────────────────────────────────
+function HistoryCard({
+  item,
+  onClick,
+  index,
+}: {
+  item: HistoryItem;
+  onClick: () => void;
+  index: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: index * 0.05 }}
+      whileHover={{ y: -3 }}
+      onClick={onClick}
+      className="group rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] hover:border-white/[0.12] overflow-hidden cursor-pointer transition-all duration-200"
+    >
+      {/* Media thumbnail */}
+      <div className="relative aspect-video bg-[#0f172a] overflow-hidden">
+        {item.mediaType === "image" ? (
+          <img
+            src={item.thumbnailUrl || item.mediaUrl}
+            alt="Session"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <video
+            src={item.mediaUrl}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            poster={item.thumbnailUrl}
+            muted
+          />
+        )}
+
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Media type pill */}
+        <div className="absolute top-3 left-3">
+          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur-sm text-[11px] text-slate-300 border border-white/10">
+            {item.mediaType === "image" ? (
+              <Camera className="w-3 h-3" />
+            ) : (
+              <Video className="w-3 h-3" />
+            )}
+            {item.mediaType === "image" ? "Photo" : "Video"}
+          </span>
+        </div>
+
+        {/* Status */}
+        <div className="absolute top-3 right-3">
+          <StatusBadge status={item.status} />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          {item.sport ? (
+            <span className="text-xs font-semibold text-ice uppercase tracking-wider">
+              {item.sport}
+            </span>
+          ) : (
+            <span />
+          )}
+          <div className="flex items-center gap-1 text-xs text-slate-500">
+            <Clock className="w-3 h-3" />
+            {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+          </div>
+        </div>
+
+        {item.drill && (
+          <p className="text-sm text-slate-300 font-medium">{item.drill}</p>
+        )}
+
+        {/* Feedback preview */}
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+            AI Feedback
+          </p>
+          <ParsedFeedback feedback={item.aiFeedback} compact />
+        </div>
+
+        {item.instructorFeedback && (
+          <div className="pt-2 border-t border-white/[0.04] space-y-1">
+            <p className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">
+              Instructor Note
+            </p>
+            <p className="text-sm text-slate-400 line-clamp-1">
+              {item.instructorFeedback}
+            </p>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Detail Modal ──────────────────────────────────────────────────────────────
+function DetailModal({
+  item,
+  onClose,
+}: {
+  item: HistoryItem;
+  onClose: () => void;
+}) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 16 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 16 }}
+          transition={{ duration: 0.2 }}
+          className="bg-[#1e293b] border border-white/[0.08] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="sticky top-0 z-10 bg-[#1e293b]/95 backdrop-blur-sm border-b border-white/[0.06] px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <StatusBadge status={item.status} />
+              <span className="text-xs text-slate-500">
+                {new Date(item.createdAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] flex items-center justify-center text-slate-400 hover:text-snow transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </motion.button>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* Media */}
+            <div className="rounded-xl overflow-hidden bg-[#0f172a]">
+              {item.mediaType === "image" ? (
+                <img
+                  src={item.mediaUrl}
+                  alt="Session"
+                  className="w-full object-contain max-h-80"
+                />
+              ) : (
+                <video
+                  src={item.mediaUrl}
+                  controls
+                  className="w-full max-h-80"
+                />
+              )}
+            </div>
+
+            {/* Meta */}
+            {(item.sport || item.drill) && (
+              <div className="flex items-center gap-3">
+                {item.sport && (
+                  <span className="px-3 py-1 rounded-full bg-ice/10 text-ice text-xs font-semibold border border-ice/20">
+                    {item.sport}
+                  </span>
+                )}
+                {item.drill && (
+                  <span className="text-sm text-slate-400">{item.drill}</span>
+                )}
+              </div>
+            )}
+
+            {/* AI Feedback */}
+            <div>
+              <h3 className="text-base font-heading font-bold text-snow mb-4">
+                AI Feedback
+              </h3>
+              <ParsedFeedback feedback={item.aiFeedback} />
+            </div>
+
+            {/* Instructor Feedback */}
+            {item.instructorFeedback && (
+              <div className="rounded-xl bg-emerald-400/5 border border-emerald-400/15 p-5">
+                <h3 className="text-base font-heading font-bold text-emerald-400 mb-3 flex items-center gap-2">
+                  <Star className="w-4 h-4" />
+                  Instructor Feedback
+                </h3>
+                <ParsedFeedback feedback={item.instructorFeedback} />
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+// ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function HistoryPage() {
   const [data, setData] = useState<HistoryItem[]>([]);
-  const [filteredData, setFilteredData] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<
-    "all" | "pending" | "completed" | "reviewed"
-  >("all");
+  const [filter, setFilter] = useState<FilterOption>("all");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
 
@@ -182,39 +416,12 @@ export default function HistoryPage() {
     fetchHistory();
   }, []);
 
-  useEffect(() => {
-    let result = [...data];
-
-    if (filter !== "all") {
-      result = result.filter((item) => item.status === filter);
-    }
-
-    result.sort((a, b) => {
-      switch (sortBy) {
-        case "newest":
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        case "oldest":
-          return (
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          );
-        case "status":
-          return a.status.localeCompare(b.status);
-        default:
-          return 0;
-      }
-    });
-
-    setFilteredData(result);
-  }, [data, filter, sortBy]);
-
   const fetchHistory = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/ai-coach-history");
-      if (!response.ok) throw new Error("Failed to fetch history");
-      const result = await response.json();
+      const res = await fetch("/api/ai-coach-history");
+      if (!res.ok) throw new Error("Failed to fetch history");
+      const result = await res.json();
       setData(result.data || []);
       setError(null);
     } catch (err) {
@@ -224,271 +431,185 @@ export default function HistoryPage() {
     }
   };
 
-  const getStatusColor = (status: HistoryItem["status"]) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
-      case "completed":
-        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-      case "reviewed":
-        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-      default:
-        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
-    }
-  };
+  const filtered = [...data]
+    .filter((item) => filter === "all" || item.status === filter)
+    .sort((a, b) => {
+      if (sortBy === "newest")
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      if (sortBy === "oldest")
+        return (
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      return a.status.localeCompare(b.status);
+    });
 
-  const getStatusText = (status: HistoryItem["status"]) => {
-    switch (status) {
-      case "pending":
-        return "Processing";
-      case "completed":
-        return "AI Analyzed";
-      case "reviewed":
-        return "Instructor Reviewed";
-      default:
-        return status;
-    }
-  };
-
+  // ── Loading ──
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-950">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-400">Loading your history...</p>
+          <div className="relative w-20 h-20 mx-auto">
+            <div className="absolute inset-0 border-4 border-ice/20 rounded-full" />
+            <div className="absolute inset-0 border-4 border-ice rounded-full border-t-transparent animate-spin" />
+          </div>
+          <p className="text-slate-400 mt-4">Loading your history...</p>
         </div>
       </div>
     );
   }
 
+  // ── Error ──
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-950">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">{error}</p>
-          <button
-            onClick={fetchHistory}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-red-400">{error}</p>
+        <button
+          onClick={fetchHistory}
+          className="px-5 py-2 rounded-xl bg-ice/10 text-ice text-sm font-semibold hover:bg-ice/20 transition-colors"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      {/* Header */}
-      <div className="bg-gray-900 border-b border-gray-800 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-white">Your History</h1>
-              <p className="text-gray-400 mt-1">
-                {data.length} {data.length === 1 ? "session" : "sessions"}{" "}
-                recorded
-              </p>
-            </div>
+    <>
+      <motion.div
+        variants={stagger}
+        initial="initial"
+        animate="animate"
+        className="space-y-8"
+      >
+        {/* ── Header ───────────────────────────────────────────────────────── */}
+        <motion.div
+          variants={fadeInUp}
+          className="flex flex-col sm:flex-row sm:items-end justify-between gap-4"
+        >
+          <div>
+            <h1 className="text-2xl md:text-3xl font-heading font-bold text-snow">
+              Session History
+            </h1>
+            <p className="text-slate-400 mt-1">
+              {data.length} {data.length === 1 ? "session" : "sessions"}{" "}
+              recorded
+            </p>
+          </div>
 
-            {/* Filters and Sort */}
-            <div className="flex gap-3">
+          {/* Controls */}
+          <div className="flex items-center gap-3">
+            {/* Filter */}
+            <div className="relative">
+              <SlidersHorizontal className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
               <select
                 value={filter}
-                onChange={(e) => setFilter(e.target.value as any)}
-                className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                onChange={(e) => setFilter(e.target.value as FilterOption)}
+                className="pl-8 pr-8 py-2 rounded-xl bg-[#1e293b]/60 border border-white/[0.06] text-sm text-slate-200 appearance-none outline-none hover:border-white/[0.12] transition-colors cursor-pointer"
               >
                 <option value="all">All Sessions</option>
                 <option value="pending">Processing</option>
                 <option value="completed">AI Analyzed</option>
                 <option value="reviewed">Instructor Reviewed</option>
               </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            </div>
 
+            {/* Sort */}
+            <div className="relative">
+              <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="pl-8 pr-8 py-2 rounded-xl bg-[#1e293b]/60 border border-white/[0.06] text-sm text-slate-200 appearance-none outline-none hover:border-white/[0.12] transition-colors cursor-pointer"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
-                <option value="status">Sort by Status</option>
+                <option value="status">By Status</option>
               </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {filteredData.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-700 text-6xl mb-4 font-light">∅</div>
-            <h3 className="text-xl font-semibold text-white mb-2">
+        {/* ── Filter Pills ─────────────────────────────────────────────────── */}
+        <motion.div
+          variants={fadeInUp}
+          className="flex items-center gap-2 flex-wrap"
+        >
+          {(["all", "pending", "completed", "reviewed"] as FilterOption[]).map(
+            (f) => {
+              const count =
+                f === "all"
+                  ? data.length
+                  : data.filter((d) => d.status === f).length;
+              return (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                    filter === f
+                      ? "bg-ice/15 border-ice/40 text-ice"
+                      : "bg-white/[0.03] border-white/[0.06] text-slate-400 hover:border-white/[0.12] hover:text-slate-200"
+                  }`}
+                >
+                  {f === "all"
+                    ? "All"
+                    : f === "pending"
+                    ? "Processing"
+                    : f === "completed"
+                    ? "AI Analyzed"
+                    : "Reviewed"}
+                  <span className="ml-1.5 opacity-60">{count}</span>
+                </button>
+              );
+            }
+          )}
+        </motion.div>
+
+        {/* ── Grid ─────────────────────────────────────────────────────────── */}
+        {filtered.length === 0 ? (
+          <motion.div
+            variants={fadeInUp}
+            className="flex flex-col items-center justify-center py-24 text-center"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-4">
+              <Camera className="w-7 h-7 text-slate-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-snow mb-2">
               No sessions found
             </h3>
-            <p className="text-gray-400">
+            <p className="text-slate-400 text-sm max-w-xs">
               {filter !== "all"
-                ? `No ${filter} sessions available. Try changing the filter.`
-                : "Start your first training session to see it here."}
+                ? "Try changing the filter to see more results."
+                : "Upload your first training session to get AI feedback."}
             </p>
-          </div>
+          </motion.div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredData.map((item) => (
-              <div
-                key={item.id}
-                className="bg-gray-900 rounded-xl border border-gray-800 hover:border-gray-700 transition-all hover:shadow-lg cursor-pointer overflow-hidden"
-                onClick={() => setSelectedItem(item)}
-              >
-                {/* Media Preview */}
-                <div className="relative aspect-video bg-gray-800">
-                  {item.mediaType === "image" ? (
-                    <img
-                      src={item.thumbnailUrl || item.mediaUrl}
-                      alt={`Session ${item.id}`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <video
-                      src={item.thumbnailUrl || item.mediaUrl}
-                      className="w-full h-full object-cover"
-                      poster={item.thumbnailUrl}
-                    />
-                  )}
-                  <div className="absolute top-3 right-3">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                        item.status
-                      )}`}
-                    >
-                      {getStatusText(item.status)}
-                    </span>
-                  </div>
-                  {item.mediaType === "video" && (
-                    <div className="absolute bottom-3 right-3 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs">
-                      Video
-                    </div>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    {item.sport && (
-                      <span className="text-sm text-blue-400 font-medium">
-                        {item.sport}
-                      </span>
-                    )}
-                    <span className="text-xs text-gray-500">
-                      {formatDistanceToNow(new Date(item.createdAt), {
-                        addSuffix: true,
-                      })}
-                    </span>
-                  </div>
-
-                  {item.drill && (
-                    <p className="text-sm text-gray-400 mb-2">{item.drill}</p>
-                  )}
-
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-300">
-                        AI Analysis:
-                      </span>
-                      <div className="text-gray-400 line-clamp-2">
-                        {formatFeedback(item.aiFeedback)}
-                      </div>
-                    </div>
-
-                    {item.instructorFeedback && (
-                      <div>
-                        <span className="font-medium text-emerald-400">
-                          Instructor:
-                        </span>
-                        <div className="text-gray-400 line-clamp-1">
-                          {formatFeedback(item.instructorFeedback)}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Modal for detailed view */}
-      {selectedItem && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedItem(null)}
-        >
-          <div
-            className="bg-gray-900 rounded-xl border border-gray-800 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+          <motion.div
+            variants={stagger}
+            className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
           >
-            <div className="sticky top-0 bg-gray-900 border-b border-gray-800 p-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-white">Session Details</h2>
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="text-gray-400 hover:text-white text-2xl transition-colors"
-              >
-                ×
-              </button>
-            </div>
+            {filtered.map((item, i) => (
+              <HistoryCard
+                key={item.id}
+                item={item}
+                index={i}
+                onClick={() => setSelectedItem(item)}
+              />
+            ))}
+          </motion.div>
+        )}
+      </motion.div>
 
-            <div className="p-6">
-              {/* Media */}
-              {selectedItem.mediaType === "image" ? (
-                <img
-                  src={selectedItem.mediaUrl}
-                  className="w-full rounded-lg"
-                  alt="Session"
-                />
-              ) : (
-                <video
-                  src={selectedItem.mediaUrl}
-                  controls
-                  className="w-full rounded-lg"
-                />
-              )}
-
-              {/* Metadata */}
-              <div className="mt-4 flex gap-2">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                    selectedItem.status
-                  )}`}
-                >
-                  {getStatusText(selectedItem.status)}
-                </span>
-                <span className="text-sm text-gray-400">
-                  {new Date(selectedItem.createdAt).toLocaleString()}
-                </span>
-              </div>
-
-              {/* AI Feedback */}
-              <div className="mt-6">
-                <h3 className="font-semibold text-lg text-white mb-3">
-                  AI Feedback
-                </h3>
-                {formatFeedback(selectedItem.aiFeedback)}
-              </div>
-
-              {/* Instructor Feedback */}
-              {selectedItem.instructorFeedback && (
-                <div className="mt-6 p-4 bg-gray-800 rounded-lg border border-gray-700">
-                  <h3 className="font-semibold text-lg text-white mb-3">
-                    Instructor Feedback
-                  </h3>
-                  {formatFeedback(selectedItem.instructorFeedback)}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* ── Modal ────────────────────────────────────────────────────────────── */}
+      {selectedItem && (
+        <DetailModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+        />
       )}
-    </div>
+    </>
   );
 }
