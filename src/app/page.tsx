@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useInView } from "framer-motion";
@@ -85,37 +85,32 @@ function Section({
 /* ------------------------------------------------------------------ */
 function MountainBackground() {
   const [loaded, setLoaded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  }, []);
   return (
     <div className="absolute inset-0 overflow-hidden">
       {/* Real mountain background image */}
       {/* YouTube video background */}
 
       <video
+        ref={videoRef}
         autoPlay
         muted
         loop
         playsInline
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 `}
+        preload="auto"
+        className="absolute inset-0 w-full h-full object-cover"
       >
         <source
           src="https://res.cloudinary.com/drm92i7dm/video/upload/v1774258829/skii_sl13uj.mp4"
           type="video/mp4"
         />
       </video>
-      <div className="block md:hidden">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source
-            src="https://res.cloudinary.com/drm92i7dm/video/upload/v1774258829/skii_sl13uj.mp4"
-            type="video/mp4"
-          />
-        </video>
-      </div>
+
       {/* Sky gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0c1425]/80 via-[#0f1d35]/70 to-[#0f172a]" />
 
