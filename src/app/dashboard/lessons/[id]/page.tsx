@@ -18,6 +18,7 @@ import {
   Play,
   Mountain,
 } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const fadeUp = {
   initial: { opacity: 0, y: 16 },
@@ -41,6 +42,7 @@ const levelConfig: Record<string, { pill: string; glow: string }> = {
 };
 
 export default function LessonDetailPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const lessonId = params.id as string;
   const [lesson, setLesson] = useState<any>(null);
@@ -157,12 +159,14 @@ export default function LessonDetailPage() {
   if (!lesson) {
     return (
       <div className="text-center py-16">
-        <p className="text-slate-400 mb-4">Lesson not found.</p>
+        <p className="text-slate-400 mb-4">
+          {t("lessonDetail.lessonNotFound")}
+        </p>
         <Link
           href="/dashboard/lessons"
           className="text-ice hover:underline text-sm"
         >
-          ← Back to Lessons
+          ← {t("lessonDetail.backToLessons")}
         </Link>
       </div>
     );
@@ -184,7 +188,7 @@ export default function LessonDetailPage() {
           className="flex items-center gap-1 hover:text-ice transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Lessons
+          {t("lessonDetail.breadcrumbLessons")}
         </Link>
         <ChevronRight className="w-3 h-3" />
         <span className="text-slate-400 truncate max-w-[200px]">
@@ -240,7 +244,9 @@ export default function LessonDetailPage() {
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-[#1e293b] to-[#0c1a2e] flex flex-col items-center justify-center gap-3">
                   <Mountain className="w-12 h-12 text-slate-700" />
-                  <p className="text-slate-500 text-sm">Video unavailable</p>
+                  <p className="text-slate-500 text-sm">
+                    {t("lessonDetail.videoUnavailable")}
+                  </p>
                 </div>
               )}
             </div>
@@ -255,7 +261,7 @@ export default function LessonDetailPage() {
                 {lesson.level}
               </span>
               <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/[0.04] text-slate-300 border border-white/[0.06]">
-                {lesson.sport || "General"}
+                {lesson.sport || t("lessonDetail.generalSport")}
               </span>
               {lesson.duration && (
                 <span className="flex items-center gap-1 text-xs text-slate-400">
@@ -271,7 +277,7 @@ export default function LessonDetailPage() {
                     className="flex items-center gap-1 text-xs text-emerald-400"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    Completed
+                    {t("lessonDetail.completedLabel")}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -298,7 +304,7 @@ export default function LessonDetailPage() {
                 <Lightbulb className="w-4 h-4 text-amber-400" />
               </div>
               <h2 className="text-sm font-heading font-bold text-snow">
-                Key Takeaways
+                {t("lessonDetail.keyTakeaways")}
               </h2>
             </div>
             <ul className="space-y-2.5">
@@ -316,16 +322,16 @@ export default function LessonDetailPage() {
                     </motion.li>
                   ))
                 : [
-                    "Practice regularly to build muscle memory",
-                    "Focus on balance and edge control",
-                    "Watch this video multiple times for better retention",
-                  ].map((t, i) => (
+                    t("lessonDetail.defaultTakeaway1"),
+                    t("lessonDetail.defaultTakeaway2"),
+                    t("lessonDetail.defaultTakeaway3"),
+                  ].map((takeaway, i) => (
                     <li
                       key={i}
                       className="flex items-start gap-2.5 text-sm text-slate-300"
                     >
                       <div className="w-1.5 h-1.5 rounded-full bg-ice/40 mt-1.5 shrink-0" />
-                      {t}
+                      {takeaway}
                     </li>
                   ))}
             </ul>
@@ -349,8 +355,8 @@ export default function LessonDetailPage() {
           >
             <CheckCircle2 className="w-4 h-4" />
             {isCompleted
-              ? "Marked as Complete — Click to Undo"
-              : "Mark as Complete"}
+              ? t("lessonDetail.markCompleteUndo")
+              : t("lessonDetail.markComplete")}
           </motion.button>
 
           {/* Prev / Next */}
@@ -360,14 +366,14 @@ export default function LessonDetailPage() {
               className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-ice transition-colors"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
-              All Lessons
+              {t("lessonDetail.allLessons")}
             </Link>
             {upNext.length > 0 && (
               <Link
                 href={`/dashboard/lessons/${upNext[0].id}`}
                 className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-ice transition-colors"
               >
-                Next Lesson
+                {t("lessonDetail.nextLesson")}
                 <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             )}
@@ -385,7 +391,7 @@ export default function LessonDetailPage() {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-slate-400 font-medium">
-                  Watch progress
+                  {t("lessonDetail.watchProgressLabel")}
                 </span>
                 <span className="text-xs font-bold text-ice">
                   {Math.round(watchedPct)}%
@@ -413,13 +419,13 @@ export default function LessonDetailPage() {
                 <BookOpen className="w-3.5 h-3.5 text-powder" />
               </div>
               <h3 className="text-sm font-heading font-bold text-snow">
-                My Notes
+                {t("lessonDetail.myNotes")}
               </h3>
             </div>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Jot down key points, tips, or things to practice..."
+              placeholder={t("lessonDetail.notesPlaceholder")}
               rows={5}
               className="w-full bg-white/[0.02] border border-white/[0.05] rounded-xl p-3 text-sm text-snow placeholder:text-slate-600 outline-none focus:border-ice/25 focus:bg-white/[0.04] resize-none transition-all leading-relaxed"
             />
@@ -434,7 +440,9 @@ export default function LessonDetailPage() {
               }`}
             >
               <Save className="w-3.5 h-3.5" />
-              {notesSaved ? "Saved!" : "Save Notes"}
+              {notesSaved
+                ? t("lessonDetail.notesSaved")
+                : t("lessonDetail.saveNotes")}
             </motion.button>
           </motion.div>
 
@@ -450,15 +458,14 @@ export default function LessonDetailPage() {
                 <Bot className="w-3.5 h-3.5 text-ice" />
               </div>
               <h3 className="text-sm font-heading font-bold text-snow">
-                Coach Tip
+                {t("lessonDetail.coachTip")}
               </h3>
               <span className="ml-auto text-[10px] text-ice/60 font-medium uppercase tracking-wider">
-                AI
+                {t("lessonDetail.aiLabel")}
               </span>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              {lesson.coachTip ||
-                "Consistency beats intensity. Small improvements each session compound into mastery over time. Focus on one thing at a time."}
+              {lesson.coachTip || t("lessonDetail.coachTipDefault")}
             </p>
           </motion.div>
 
@@ -472,7 +479,7 @@ export default function LessonDetailPage() {
             >
               <h3 className="text-sm font-heading font-bold text-snow mb-4 flex items-center gap-2">
                 <div className="w-1.5 h-3.5 rounded-full bg-slate-600" />
-                Up Next
+                {t("lessonDetail.upNext")}
               </h3>
               <div className="space-y-2">
                 {upNext.slice(0, 4).map((next: any, i: number) => (

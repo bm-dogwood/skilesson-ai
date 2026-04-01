@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import DashboardSidebar from "./DashboardSidebar";
 import { useAuth } from "@/lib/auth-context";
+import { LanguageToggle } from "./LanguageToggle";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -45,6 +46,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Right side (user menu & logout) */}
           <div className="flex items-center gap-3">
+            <LanguageToggle />
             {/* Mobile logout button */}
             <motion.button
               whileHover={{ scale: 1.02 }}

@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Camera,
 } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -471,7 +472,7 @@ function AISubmissionsChart({
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
+  const { t } = useTranslation();
   useEffect(() => {
     fetch("/api/dashboard")
       .then((r) => r.json())
@@ -488,7 +489,7 @@ export default function DashboardPage() {
             <div className="absolute inset-0 border-4 border-ice/20 rounded-full" />
             <div className="absolute inset-0 border-4 border-ice rounded-full border-t-transparent animate-spin" />
           </div>
-          <p className="text-slate-400 mt-4">Loading your dashboard...</p>
+          <p className="text-slate-400 mt-4">{t("dashboard.loadingText")}</p>
         </div>
       </div>
     );
@@ -498,10 +499,10 @@ export default function DashboardPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] text-center">
         <h2 className="text-3xl font-bold text-white mb-3">
-          Unlock Your Potential
+          {t("common.unlockTitle")}
         </h2>
         <p className="text-slate-400 mb-8 max-w-md">
-          Choose a plan to access our complete library of premium lessons.
+          {t("common.unlockDescription")}
         </p>
         <Link href="/pricing">
           <motion.button
@@ -509,7 +510,7 @@ export default function DashboardPage() {
             whileTap={{ scale: 0.95 }}
             className="px-8 py-3 rounded-xl bg-gradient-to-r from-ice to-ice/80 text-black font-semibold shadow-lg shadow-ice/20"
           >
-            View Plans
+            {t("common.viewPlans")}
           </motion.button>
         </Link>
       </div>
@@ -558,11 +559,12 @@ export default function DashboardPage() {
       {/* ── Welcome ──────────────────────────────────────────────────────────── */}
       <motion.div variants={fadeInUp}>
         <h1 className="text-2xl md:text-3xl font-heading font-bold text-snow">
-          Welcome back, {user?.name || "Rider"}
+          {t("dashboard.welcomeBack")}, {user?.name || "Rider"}
         </h1>
         <p className="text-slate-400 mt-1">
           {user?.level || "Beginner"} · {user?.sport || "Snowboarding"}
-          {stats.overallProgress > 0 && ` · ${stats.overallProgress}% complete`}
+          {stats.overallProgress > 0 &&
+            ` · ${stats.overallProgress}% ${t("dashboard.overallComplete")}`}
         </p>
       </motion.div>
 
@@ -588,7 +590,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex-1 space-y-3">
               <span className="px-2.5 py-1 rounded-full bg-ice/10 text-ice text-xs font-semibold">
-                IN PROGRESS
+                {t("dashboard.continueWatchingBadge")}
               </span>
               <h2 className="text-xl md:text-2xl font-heading font-bold text-snow">
                 {continueWatching.title}
@@ -603,7 +605,7 @@ export default function DashboardPage() {
                   className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-ice to-powder text-navy font-semibold rounded-xl shadow-lg shadow-ice/20 mt-2"
                 >
                   <Play className="w-4 h-4" />
-                  Continue Where You Left Off
+                  {t("dashboard.continueWatchingCta")}
                 </motion.button>
               </Link>
             </div>
@@ -617,27 +619,27 @@ export default function DashboardPage() {
         className="grid grid-cols-2 lg:grid-cols-4 gap-4"
       >
         <StatCard
-          label="Lessons Completed"
+          label={t("dashboard.lessonsCompleted")}
           value={stats.completedLessons}
           icon={BookOpen}
           color="text-ice"
         />
         <StatCard
-          label="Hours Learned"
+          label={t("dashboard.hoursLearned")}
           value={stats.hoursLearned}
           suffix="h"
           icon={Clock}
           color="text-powder"
         />
         <StatCard
-          label="Current Streak"
+          label={t("dashboard.currentStreak")}
           value={stats.currentStreak}
           suffix="d"
           icon={Flame}
           color="text-orange-400"
         />
         <StatCard
-          label="AI Submissions"
+          label={t("dashboard.aiSubmissions")}
           value={stats.totalSubmissions}
           icon={Camera}
           color="text-purple-400"
@@ -654,10 +656,10 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-base font-heading font-bold text-snow">
-                Weekly Activity
+                {t("dashboard.weeklyActivityTitle")}
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Lessons completed & watch time this week
+                {t("dashboard.weeklyActivitySubtitle")}
               </p>
             </div>
             <TrendingUp className="w-5 h-5 text-ice/60" />
@@ -673,10 +675,10 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-base font-heading font-bold text-snow">
-                Lesson Status
+                {t("dashboard.lessonStatusTitle")}
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                All lessons breakdown
+                {t("dashboard.lessonStatusSubtitle")}
               </p>
             </div>
           </div>
@@ -718,8 +720,10 @@ export default function DashboardPage() {
           {stats.totalSubmissions > 0 && (
             <div className="mt-4 pt-4 border-t border-white/[0.05] flex items-center justify-between">
               <span className="text-xs text-slate-400">
-                {stats.totalSubmissions} total submission
-                {stats.totalSubmissions !== 1 ? "s" : ""}
+                {stats.totalSubmissions}{" "}
+                {stats.totalSubmissions !== 1
+                  ? t("dashboard.aiCoachSubmissionsTotalPlural")
+                  : t("dashboard.aiCoachSubmissionsTotal")}
               </span>
               <Link href="/dashboard/ai-coach">
                 <button className="text-xs text-ice hover:text-ice/80 flex items-center gap-1 transition-colors">
@@ -742,12 +746,12 @@ export default function DashboardPage() {
             <Flame className="w-5 h-5 text-orange-400" />
             <div>
               <h3 className="text-base font-heading font-bold text-snow">
-                {stats.currentStreak} Day Streak
+                {stats.currentStreak} {t("dashboard.streakTitle")}
               </h3>
               <p className="text-xs text-slate-400">
                 {stats.currentStreak >= 5
-                  ? "You're on fire! Keep it up."
-                  : "Consistency is key — keep going!"}
+                  ? t("dashboard.streakEncouragementHigh")
+                  : t("dashboard.streakEncouragementLow")}
               </p>
             </div>
           </div>
@@ -795,12 +799,11 @@ export default function DashboardPage() {
               <Bot className="w-5 h-5 text-ice" />
             </div>
             <h3 className="text-sm font-heading font-bold text-snow">
-              AI Coach
+              {t("dashboard.aiCoachCardTitle")}
             </h3>
           </div>
           <p className="text-sm text-slate-300 leading-relaxed mb-4 flex-1">
-            Upload a photo or video of your technique and get instant
-            personalized feedback from your AI coach.
+            {t("dashboard.aiCoachCardDescription")}
           </p>
           <Link href="/dashboard/coach">
             <motion.button
@@ -808,7 +811,7 @@ export default function DashboardPage() {
               whileTap={{ scale: 0.97 }}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-ice/10 text-ice text-sm font-semibold hover:bg-ice/20 transition-colors"
             >
-              Get AI Feedback
+              {t("dashboard.aiCoachCardCta")}
               <ArrowRight className="w-4 h-4" />
             </motion.button>
           </Link>
@@ -822,7 +825,7 @@ export default function DashboardPage() {
           className="rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] p-6"
         >
           <h3 className="text-base font-heading font-bold text-snow mb-5">
-            Recent Activity
+            {t("dashboard.recentActivity")}
           </h3>
           <div className="space-y-2">
             {recentActivity.map((item, i) => {

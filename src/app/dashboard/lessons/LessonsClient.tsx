@@ -18,6 +18,7 @@ import {
   SlidersHorizontal,
   Play,
 } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type Lesson = {
   id: string;
@@ -63,6 +64,7 @@ const fadeUp = {
 };
 
 export default function LessonsClient() {
+  const { t } = useTranslation();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasSubscription, setHasSubscription] = useState(false);
@@ -143,7 +145,7 @@ export default function LessonsClient() {
             <div className="absolute inset-0 border-4 border-ice/20 rounded-full" />
             <div className="absolute inset-0 border-4 border-ice rounded-full border-t-transparent animate-spin" />
           </div>
-          <p className="text-slate-400 mt-4">Loading your lessons...</p>
+          <p className="text-slate-400 mt-4">{t("lessons.loadingText")}</p>
         </div>
       </div>
     );
@@ -161,10 +163,10 @@ export default function LessonsClient() {
           <Lock className="w-9 h-9 text-ice" />
         </motion.div>
         <h2 className="text-3xl font-bold text-white mb-3">
-          Unlock Your Potential
+          {t("lessons.unlockTitle")}
         </h2>
         <p className="text-slate-400 mb-8 max-w-md">
-          Choose a plan to access our complete library of premium lessons.
+          {t("lessons.unlockDescription")}
         </p>
         <Link href="/pricing">
           <motion.button
@@ -172,7 +174,7 @@ export default function LessonsClient() {
             whileTap={{ scale: 0.95 }}
             className="px-8 py-3 rounded-xl bg-gradient-to-r from-ice to-ice/80 text-black font-semibold shadow-lg shadow-ice/20"
           >
-            View Plans
+            {t("lessons.viewPlans")}
           </motion.button>
         </Link>
       </div>
@@ -193,11 +195,14 @@ export default function LessonsClient() {
       >
         <div>
           <h1 className="text-2xl md:text-3xl font-heading font-bold text-snow">
-            Lesson Library
+            {t("lessons.pageTitle")}
           </h1>
           <p className="text-slate-400 mt-1">
-            {lessons.length} lessons · {completedCount} completed ·{" "}
-            {inProgressCount} in progress
+            {t("lessons.pageSubtitleParts", {
+              count: lessons.length,
+              completed: completedCount,
+              inProgress: inProgressCount,
+            })}
           </p>
         </div>
 
@@ -233,7 +238,7 @@ export default function LessonsClient() {
             }`}
           >
             <SlidersHorizontal className="w-4 h-4" />
-            Filters
+            {t("lessons.filterTitle")}
             <ChevronDown
               className={`w-3.5 h-3.5 transition-transform ${
                 showFilters ? "rotate-180" : ""
@@ -248,7 +253,7 @@ export default function LessonsClient() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
           type="text"
-          placeholder="Search lessons..."
+          placeholder={t("lessons.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-11 pr-10 py-3 rounded-xl bg-[#1e293b]/60 border border-white/[0.06] text-snow placeholder:text-slate-500 focus:outline-none focus:border-ice/30 transition-all text-sm"
@@ -275,35 +280,56 @@ export default function LessonsClient() {
             <div className="rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] p-6 space-y-5">
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-heading font-bold text-snow">
-                  Filter Lessons
+                  {t("lessons.filterTitle")}
                 </h3>
                 <button
                   onClick={resetFilters}
                   className="text-xs text-ice hover:text-ice/70 transition-colors"
                 >
-                  Reset all
+                  {t("lessons.filterReset")}
                 </button>
               </div>
               <div className="grid sm:grid-cols-3 gap-6">
                 {[
                   {
-                    label: "Level",
-                    options: ["All", "Beginner", "Intermediate", "Advanced"],
+                    label: t("common.level"),
+                    options: [
+                      t("common.all"),
+                      t("common.beginner"),
+                      t("common.intermediate"),
+                      t("common.advanced"),
+                    ],
                     value: levelFilter,
                     set: setLevelFilter,
                   },
                   {
-                    label: "Sport",
-                    options: ["All", "Skiing", "Snowboarding"],
+                    label: t("common.sport"),
+                    options: [
+                      t("common.all"),
+                      t("common.skiing"),
+                      t("common.snowboarding"),
+                    ],
                     value: sportFilter,
                     set: setSportFilter,
                   },
                   {
-                    label: "Status",
-                    options: ["All", "Completed", "In Progress", "Not Started"],
+                    label: t("common.status"),
+                    options: [
+                      t("common.all"),
+                      t("common.completed"),
+                      t("common.inProgress"),
+                      t("common.notStarted"),
+                    ],
                     value: completionFilter,
-                    set: (v: string) =>
-                      setCompletionFilter(v as CompletionFilter),
+                    set: (v: string) => {
+                      const mapping: Record<string, CompletionFilter> = {
+                        [t("common.all")]: "All",
+                        [t("common.completed")]: "Completed",
+                        [t("common.inProgress")]: "In Progress",
+                        [t("common.notStarted")]: "Not Started",
+                      };
+                      setCompletionFilter(mapping[v] || "All");
+                    },
                   },
                 ].map(({ label, options, value, set }) => (
                   <div key={label}>
@@ -316,7 +342,28 @@ export default function LessonsClient() {
                           key={opt}
                           onClick={() => set(opt)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                            value === opt
+                            (label === t("common.level") &&
+                              ((opt === t("common.all") && value === "All") ||
+                                (opt === t("common.beginner") &&
+                                  value === "Beginner") ||
+                                (opt === t("common.intermediate") &&
+                                  value === "Intermediate") ||
+                                (opt === t("common.advanced") &&
+                                  value === "Advanced"))) ||
+                            (label === t("common.sport") &&
+                              ((opt === t("common.all") && value === "All") ||
+                                (opt === t("common.skiing") &&
+                                  value === "Skiing") ||
+                                (opt === t("common.snowboarding") &&
+                                  value === "Snowboarding"))) ||
+                            (label === t("common.status") &&
+                              ((opt === t("common.all") && value === "All") ||
+                                (opt === t("common.completed") &&
+                                  value === "Completed") ||
+                                (opt === t("common.inProgress") &&
+                                  value === "In Progress") ||
+                                (opt === t("common.notStarted") &&
+                                  value === "Not Started")))
                               ? "bg-ice/15 border-ice/30 text-ice"
                               : "bg-white/[0.03] border-white/[0.06] text-slate-400 hover:border-white/[0.12] hover:text-slate-200"
                           }`}
@@ -338,7 +385,7 @@ export default function LessonsClient() {
         <motion.div variants={fadeUp} className="space-y-4">
           <h2 className="text-base font-heading font-bold text-snow flex items-center gap-2">
             <div className="w-1.5 h-4 rounded-full bg-ice" />
-            Continue Watching
+            {t("lessons.continueWatching")}
           </h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {continueWatching.map((lesson) => {
@@ -382,7 +429,8 @@ export default function LessonsClient() {
                           {lesson.title}
                         </p>
                         <p className="text-xs text-slate-400 mt-0.5">
-                          {pct}% complete
+                          {pct}
+                          {t("lessons.percentComplete")}
                         </p>
                       </div>
                       <span
@@ -404,7 +452,7 @@ export default function LessonsClient() {
         <div className="flex items-center justify-between">
           <h2 className="text-base font-heading font-bold text-snow flex items-center gap-2">
             <div className="w-1.5 h-4 rounded-full bg-slate-600" />
-            All Lessons
+            {t("lessons.allLessons")}
             <span className="text-slate-500 font-normal text-sm">
               ({filtered.length})
             </span>
@@ -421,16 +469,16 @@ export default function LessonsClient() {
               <BookOpen className="w-6 h-6 text-slate-600" />
             </div>
             <h3 className="text-base font-semibold text-snow mb-1">
-              No lessons found
+              {t("lessons.noLessonsFound")}
             </h3>
             <p className="text-slate-500 text-sm mb-4">
-              Try adjusting your search or filters.
+              {t("lessons.noLessonsDescription")}
             </p>
             <button
               onClick={resetFilters}
               className="px-4 py-2 rounded-xl bg-ice/10 text-ice text-sm font-medium hover:bg-ice/20 transition-colors"
             >
-              Clear filters
+              {t("lessons.clearFilters")}
             </button>
           </motion.div>
         ) : viewMode === "grid" ? (
@@ -502,7 +550,7 @@ export default function LessonsClient() {
                         {status === "COMPLETED" && (
                           <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-400/15 border border-emerald-400/30 text-emerald-400 text-[10px] font-semibold backdrop-blur-sm">
                             <CheckCircle2 className="w-2.5 h-2.5" />
-                            Done
+                            {t("lessons.doneLabel")}
                           </span>
                         )}
                         {status === "IN_PROGRESS" && (
@@ -533,8 +581,7 @@ export default function LessonsClient() {
                       </h3>
 
                       <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                        {lesson.description ||
-                          "Learn essential techniques and improve your skills."}
+                        {lesson.description || t("lessons.learnEssentials")}
                       </p>
                     </div>
                   </motion.div>
@@ -606,17 +653,18 @@ export default function LessonsClient() {
                       <div>
                         {status === "COMPLETED" && (
                           <span className="flex items-center gap-1 text-[11px] text-emerald-400">
-                            <CheckCircle2 className="w-3 h-3" /> Completed
+                            <CheckCircle2 className="w-3 h-3" />{" "}
+                            {t("common.completed")}
                           </span>
                         )}
                         {status === "IN_PROGRESS" && (
                           <span className="text-[11px] text-ice">
-                            {pct}% complete
+                            {pct}% {t("lessons.percentComplete")}
                           </span>
                         )}
                         {status === "NOT_STARTED" && (
                           <span className="text-[11px] text-slate-500">
-                            Not started
+                            {t("common.notStarted")}
                           </span>
                         )}
                       </div>

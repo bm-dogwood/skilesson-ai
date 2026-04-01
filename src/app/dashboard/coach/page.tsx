@@ -10,8 +10,10 @@ import {
   ChatBubbleLeftRightIcon,
   AcademicCapIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function AICoachUpload() {
+  const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -20,28 +22,28 @@ export default function AICoachUpload() {
 
   const fallbackResponses = [
     {
-      aiDescription:
-        "Your posture shows a solid foundation. You're maintaining decent balance, but there’s room to refine your stance for smoother control.",
-      aiFeedback:
-        "Try bending your knees slightly more and keeping your weight centered. This will improve your stability and edge control.",
+      positive: t("coachUpload.fallbackPositive1"),
+      correction: t("coachUpload.fallbackCorrection1"),
+      fix: t("coachUpload.fallbackFix1"),
+      why: t("coachUpload.fallbackWhy1"),
     },
     {
-      aiDescription:
-        "Good effort! Your movement suggests you're getting comfortable on the slopes, though transitions could be smoother.",
-      aiFeedback:
-        "Focus on fluid transitions between turns and keep your upper body relaxed. Let your lower body guide the motion.",
+      positive: t("coachUpload.fallbackPositive2"),
+      correction: t("coachUpload.fallbackCorrection2"),
+      fix: t("coachUpload.fallbackFix2"),
+      why: t("coachUpload.fallbackWhy2"),
     },
     {
-      aiDescription:
-        "You demonstrate good confidence, especially in your speed control. However, your balance shifts slightly during turns.",
-      aiFeedback:
-        "Work on keeping your shoulders aligned with your skis and avoid leaning back. This will enhance control and precision.",
+      positive: t("coachUpload.fallbackPositive3"),
+      correction: t("coachUpload.fallbackCorrection3"),
+      fix: t("coachUpload.fallbackFix3"),
+      why: t("coachUpload.fallbackWhy3"),
     },
     {
-      aiDescription:
-        "Nice technique overall! Your stance is fairly stable, but your weight distribution could be improved.",
-      aiFeedback:
-        "Try to keep more pressure on your downhill ski and stay forward. This will help with carving and smoother turns.",
+      positive: t("coachUpload.fallbackPositive4"),
+      correction: t("coachUpload.fallbackCorrection4"),
+      fix: t("coachUpload.fallbackFix4"),
+      why: t("coachUpload.fallbackWhy4"),
     },
   ];
 
@@ -128,10 +130,10 @@ export default function AICoachUpload() {
           >
             <AcademicCapIcon className="w-8 h-8 text-gray-200" />
           </motion.div>
-          <h1 className="text-4xl font-bold text-white mb-2">AI Ski Coach</h1>
-          <p className="text-gray-400">
-            Upload your skiing video or photo for instant AI-powered analysis
-          </p>
+          <h1 className="text-4xl font-bold text-white mb-2">
+            {t("coachUpload.pageTitle")}
+          </h1>
+          <p className="text-gray-400">{t("coachUpload.pageSubtitle")}</p>
         </div>
 
         {/* Main Card */}
@@ -171,10 +173,10 @@ export default function AICoachUpload() {
 
               <div className="mb-6">
                 <p className="text-gray-300 text-lg mb-2 font-medium">
-                  Drag & drop your media here
+                  {t("coachUpload.dragDropText")}
                 </p>
                 <p className="text-gray-500 text-sm">
-                  Supports images and videos
+                  {t("coachUpload.dragDropSupports")}
                 </p>
               </div>
 
@@ -189,7 +191,7 @@ export default function AICoachUpload() {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 <button className="bg-gray-800 text-white px-6 py-3 rounded-xl font-medium hover:bg-gray-700 transition-all border border-gray-700">
-                  Select File
+                  {t("coachUpload.selectFile")}
                 </button>
               </div>
             </motion.div>
@@ -244,7 +246,9 @@ export default function AICoachUpload() {
                     disabled={loading}
                     className="bg-gray-800 text-white px-8 py-3 rounded-xl font-medium hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-gray-700"
                   >
-                    {loading ? "Analyzing..." : "Analyze Technique"}
+                    {loading
+                      ? t("coachUpload.analyzingText")
+                      : t("coachUpload.analyzeButton")}
                   </button>
                 </div>
               </motion.div>
@@ -272,14 +276,15 @@ export default function AICoachUpload() {
                   />
                 </div>
                 <p className="text-gray-400">
-                  <span className="font-semibold text-gray-200">AI Coach</span>{" "}
-                  is analyzing your technique...
+                  <span className="font-semibold text-gray-200">
+                    {t("coachUpload.aiCoach")}
+                  </span>{" "}
+                  {t("coachUpload.aiAnalyzing")}
                 </p>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Results */}
           {/* Results */}
           <AnimatePresence>
             {result && !loading && (
@@ -300,7 +305,7 @@ export default function AICoachUpload() {
                           <div className="flex items-start gap-3">
                             <div className="flex-1">
                               <p className="text-green-400 font-semibold text-sm uppercase tracking-wide mb-1">
-                                What you're doing well
+                                {t("coachUpload.positive")}
                               </p>
                               <p className="text-gray-300">{result.positive}</p>
                             </div>
@@ -314,7 +319,7 @@ export default function AICoachUpload() {
                           <div className="flex items-start gap-3">
                             <div className="flex-1">
                               <p className="text-yellow-400 font-semibold text-sm uppercase tracking-wide mb-1">
-                                Area for Improvement
+                                {t("coachUpload.correction")}
                               </p>
                               <p className="text-gray-300">
                                 {result.correction}
@@ -330,7 +335,7 @@ export default function AICoachUpload() {
                           <div className="flex items-start gap-3">
                             <div className="flex-1">
                               <p className="text-blue-400 font-semibold text-sm uppercase tracking-wide mb-1">
-                                How to Fix
+                                {t("coachUpload.fix")}
                               </p>
                               <p className="text-gray-300">{result.fix}</p>
                             </div>
@@ -344,7 +349,7 @@ export default function AICoachUpload() {
                           <div className="flex items-start gap-3">
                             <div className="flex-1">
                               <p className="text-purple-400 font-semibold text-sm uppercase tracking-wide mb-1">
-                                Why It Matters
+                                {t("coachUpload.why")}
                               </p>
                               <p className="text-gray-300">{result.why}</p>
                             </div>
@@ -358,7 +363,7 @@ export default function AICoachUpload() {
                       <div className="bg-gray-800 rounded-xl p-5 border border-gray-700">
                         <div className="flex items-center gap-2 mb-3">
                           <h3 className="font-semibold text-white">
-                            Recommended Lessons
+                            {t("coachUpload.recommendedLessons")}
                           </h3>
                         </div>
                         <div className="space-y-2">
@@ -385,13 +390,13 @@ export default function AICoachUpload() {
                     {/* Quick Actions */}
                     <div className="flex gap-2 pt-2">
                       <button className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-300 transition-colors border border-gray-700">
-                        Helpful
+                        {t("coachUpload.helpful")}
                       </button>
                       <button className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-300 transition-colors border border-gray-700">
-                        Ask for clarification
+                        {t("coachUpload.askClarification")}
                       </button>
                       <button className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-300 transition-colors border border-gray-700">
-                        Save feedback
+                        {t("coachUpload.saveFeedback")}
                       </button>
                     </div>
                   </div>
@@ -402,23 +407,25 @@ export default function AICoachUpload() {
                   <div className="flex items-center gap-2 mb-4">
                     <ChatBubbleLeftRightIcon className="w-5 h-5 text-gray-400" />
                     <h2 className="font-semibold text-white">
-                      Instructor Feedback
+                      {t("coachUpload.instructorFeedbackTitle")}
                     </h2>
                   </div>
                   <div className="space-y-3">
                     <textarea
                       value={instructorFeedback}
                       onChange={(e) => setInstructorFeedback(e.target.value)}
-                      placeholder="Add your own feedback or notes..."
+                      placeholder={t(
+                        "coachUpload.instructorFeedbackPlaceholder"
+                      )}
                       className="w-full p-4 bg-gray-800 border border-gray-700 rounded-xl text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-transparent transition-all resize-none"
                       rows={3}
                     />
                     <div className="flex gap-2">
                       <button className="px-4 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 transition-all text-sm font-medium">
-                        Save Notes
+                        {t("coachUpload.saveNotes")}
                       </button>
                       <button className="px-4 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 transition-all text-sm font-medium">
-                        Request Expert Review
+                        {t("coachUpload.requestExpertReview")}
                       </button>
                     </div>
                   </div>
@@ -430,7 +437,7 @@ export default function AICoachUpload() {
 
         {/* Footer */}
         <p className="text-center text-gray-600 text-sm mt-6">
-          Powered by AI • Instant feedback • Pro tips included
+          {t("coachUpload.footerPowered")}
         </p>
       </motion.div>
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "@/hooks/useTranslation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock,
@@ -58,6 +59,7 @@ const LEVEL_DOT: Record<string, string> = {
 
 // ─── Large Progress Ring ───────────────────────────────────────────────────────
 function LargeProgressRing({ progress }: { progress: number }) {
+  const { t } = useTranslation();
   const size = 180;
   const strokeWidth = 12;
   const radius = (size - strokeWidth) / 2;
@@ -105,7 +107,9 @@ function LargeProgressRing({ progress }: { progress: number }) {
         >
           {progress}%
         </motion.span>
-        <span className="text-xs text-slate-400 mt-1">Complete</span>
+        <span className="text-xs text-slate-400 mt-1">
+          {t("progress.overallProgressLabel")}
+        </span>
       </div>
     </div>
   );
@@ -117,6 +121,7 @@ function ActivityHeatmap({
 }: {
   data: { date: string; count: number }[];
 }) {
+  const { t } = useTranslation();
   const [tooltip, setTooltip] = useState<{
     date: string;
     count: number;
@@ -235,7 +240,10 @@ function ActivityHeatmap({
             <span className="font-semibold text-snow">{tooltip.count}</span>
             <span className="text-slate-400">
               {" "}
-              lesson{tooltip.count !== 1 ? "s" : ""} on{" "}
+              {tooltip.count !== 1
+                ? t("common.lessons")
+                : t("common.lesson")}{" "}
+              {t("common.on")}{" "}
             </span>
             <span className="text-ice">
               {new Date(tooltip.date + "T00:00:00").toLocaleDateString(
@@ -252,14 +260,14 @@ function ActivityHeatmap({
 
       {/* Legend */}
       <div className="flex items-center gap-1.5 mt-3 justify-end">
-        <span className="text-[10px] text-slate-500">Less</span>
+        <span className="text-[10px] text-slate-500">{t("common.less")}</span>
         {[0, 0.25, 0.5, 0.75, 1].map((v) => (
           <div
             key={v}
             className={`w-3 h-3 rounded-sm ${getColor(v * maxCount)}`}
           />
         ))}
-        <span className="text-[10px] text-slate-500">More</span>
+        <span className="text-[10px] text-slate-500">{t("common.more")}</span>
       </div>
     </div>
   );
@@ -271,11 +279,13 @@ function CompletionTimeline({
 }: {
   data: { date: string; lessonTitle: string; level: string }[];
 }) {
+  const { t } = useTranslation();
+
   if (!data.length) {
     return (
       <div className="text-center py-8 text-slate-500 text-sm">
         <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
-        Complete your first lesson to see your timeline
+        <p>{t("progress.completionTimelineEmpty")}</p>
       </div>
     );
   }
@@ -350,6 +360,7 @@ function CompletionTimeline({
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function ProgressPage() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -369,7 +380,7 @@ export default function ProgressPage() {
             <div className="absolute inset-0 border-4 border-ice/20 rounded-full" />
             <div className="absolute inset-0 border-4 border-ice rounded-full border-t-transparent animate-spin" />
           </div>
-          <p className="text-slate-400 mt-4">Loading your progress...</p>
+          <p className="text-slate-400 mt-4">{t("progress.loadingText")}</p>
         </div>
       </div>
     );
@@ -400,11 +411,9 @@ export default function ProgressPage() {
       {/* ── Header ───────────────────────────────────────────────────────────── */}
       <motion.div variants={fadeInUp}>
         <h1 className="text-2xl md:text-3xl font-heading font-bold text-snow">
-          Your Mountain Journey
+          {t("progress.pageTitle")}
         </h1>
-        <p className="text-slate-400 mt-1">
-          Track your progress and celebrate your achievements
-        </p>
+        <p className="text-slate-400 mt-1">{t("progress.pageSubtitle")}</p>
       </motion.div>
 
       {/* ── Top Row: Ring + Level + Time ──────────────────────────────────────── */}
@@ -416,8 +425,8 @@ export default function ProgressPage() {
         >
           <LargeProgressRing progress={stats?.progressPercent || 0} />
           <p className="text-sm text-slate-400 mt-4">
-            {stats?.completedLessons || 0} of {stats?.totalLessons || 0} lessons
-            completed
+            {stats?.completedLessons || 0} {t("progress.of")}{" "}
+            {stats?.totalLessons || 0} {t("progress.lessonsCompletedOf")}
           </p>
         </motion.div>
 
@@ -427,7 +436,7 @@ export default function ProgressPage() {
           className="rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] p-6"
         >
           <h3 className="text-sm font-heading font-bold text-snow mb-5">
-            Level Breakdown
+            {t("progress.levelBreakdown")}
           </h3>
           <div className="space-y-5">
             {levelBreakdown.map((level: any) => {
@@ -442,7 +451,7 @@ export default function ProgressPage() {
                       {level.level}
                     </span>
                     <span className="text-xs text-slate-400">
-                      {level.completed}/{level.total} lessons
+                      {level.completed}/{level.total} {t("progress.lessons")}
                     </span>
                   </div>
                   <div className="w-full h-2 bg-white/[0.06] rounded-full overflow-hidden">
@@ -469,22 +478,22 @@ export default function ProgressPage() {
           className="rounded-2xl bg-[#1e293b]/50 border border-white/[0.06] p-6"
         >
           <h3 className="text-sm font-heading font-bold text-snow mb-5">
-            Time Tracking
+            {t("progress.timeTracking")}
           </h3>
           <div className="space-y-5">
             {[
               {
-                label: "Total Time",
+                label: t("progress.totalTime"),
                 value: formatMinutes(timeTracking.totalMinutes || 0),
                 icon: Clock,
               },
               {
-                label: "This Week",
+                label: t("progress.thisWeek"),
                 value: formatMinutes(timeTracking.weekMinutes || 0),
                 icon: Calendar,
               },
               {
-                label: "Avg Session",
+                label: t("progress.avgSession"),
                 value: formatMinutes(timeTracking.avgSessionMinutes || 0),
                 icon: Timer,
               },
@@ -513,15 +522,15 @@ export default function ProgressPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-sm font-heading font-bold text-snow">
-              Activity Heatmap
+              {t("progress.activityHeatmap")}
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Last 12 weeks of learning activity
+              {t("progress.activityHeatmapSubtitle")}
             </p>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-slate-400">
             <Flame className="w-4 h-4 text-orange-400" />
-            {stats?.currentStreak || 0} day streak
+            {stats?.currentStreak || 0} {t("progress.dayStreak")}
           </div>
         </div>
         <ActivityHeatmap data={heatmap} />
@@ -538,9 +547,11 @@ export default function ProgressPage() {
             <TrendingUp className="w-5 h-5 text-ice" />
             <div>
               <h3 className="text-sm font-heading font-bold text-snow">
-                Completion Timeline
+                {t("progress.completionTimeline")}
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">Last 30 days</p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {t("progress.completionTimelineSub")}
+              </p>
             </div>
           </div>
           <CompletionTimeline data={timeline} />
@@ -554,10 +565,10 @@ export default function ProgressPage() {
           <div className="flex items-center gap-2 mb-5">
             <Award className="w-5 h-5 text-gold" />
             <h3 className="text-sm font-heading font-bold text-snow">
-              Achievements
+              {t("progress.achievements")}
             </h3>
             <span className="text-xs text-slate-400 ml-auto">
-              {earnedBadges}/{badges.length} earned
+              {earnedBadges}/{badges.length} {t("progress.achievementsEarned")}
             </span>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -614,29 +625,29 @@ export default function ProgressPage() {
       >
         <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-ice/5 to-transparent rounded-full blur-3xl" />
         <h3 className="text-lg font-heading font-bold text-snow mb-4">
-          {monthly.monthName || "This Month"}
+          {monthly.monthName || t("progress.monthlySummaryTitle")}
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             {
-              label: "Lessons Completed",
+              label: t("progress.monthlyLessonsCompleted"),
               value: monthly.lessonsCompleted ?? "—",
             },
             {
-              label: "Time Spent",
+              label: t("progress.monthlyTimeSpent"),
               value: monthly.watchMinutes
                 ? formatMinutes(monthly.watchMinutes)
                 : "—",
             },
             {
-              label: "Current Streak",
+              label: t("progress.monthlyCurrentStreak"),
               value:
                 monthly.longestStreak != null
                   ? `${monthly.longestStreak}d`
                   : "—",
             },
             {
-              label: "Badges Earned",
+              label: t("progress.monthlyBadgesEarned"),
               value: monthly.badgesEarned ?? "—",
             },
           ].map((item) => (

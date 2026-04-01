@@ -19,6 +19,7 @@ import {
   ArrowUpDown,
   SlidersHorizontal,
 } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface HistoryItem {
@@ -56,6 +57,8 @@ function ParsedFeedback({
   feedback: string;
   compact?: boolean;
 }) {
+  const { t } = useTranslation();
+
   if (!feedback) return null;
 
   let parsed: any = null;
@@ -82,7 +85,7 @@ function ParsedFeedback({
   const sections = [
     {
       key: "positive",
-      label: "What you're doing well",
+      label: t("coachHistory.positive"),
       icon: Star,
       color: "text-emerald-400",
       bg: "bg-emerald-400/8",
@@ -90,7 +93,7 @@ function ParsedFeedback({
     },
     {
       key: "correction",
-      label: "Area for Improvement",
+      label: t("coachHistory.correction"),
       icon: AlertTriangle,
       color: "text-amber-400",
       bg: "bg-amber-400/8",
@@ -98,7 +101,7 @@ function ParsedFeedback({
     },
     {
       key: "fix",
-      label: "How to Fix",
+      label: t("coachHistory.fix"),
       icon: Wrench,
       color: "text-sky-400",
       bg: "bg-sky-400/8",
@@ -106,7 +109,7 @@ function ParsedFeedback({
     },
     {
       key: "why",
-      label: "Why It Matters",
+      label: t("coachHistory.why"),
       icon: Lightbulb,
       color: "text-purple-400",
       bg: "bg-purple-400/8",
@@ -137,7 +140,7 @@ function ParsedFeedback({
           <div className="flex items-center gap-2 mb-2 text-ice">
             <BookOpen className="w-3.5 h-3.5" />
             <span className="text-xs font-semibold uppercase tracking-wider">
-              Recommended Lessons
+              {t("coachHistory.recommendedLessons")}
             </span>
           </div>
           <ul className="space-y-1">
@@ -159,21 +162,23 @@ function ParsedFeedback({
 
 // ─── Status Badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: HistoryItem["status"] }) {
+  const { t } = useTranslation();
+
   const config = {
     pending: {
-      label: "Processing",
+      label: t("coachHistory.statusPending"),
       icon: Loader2,
       cls: "bg-amber-400/10 text-amber-400 border-amber-400/20",
       spin: true,
     },
     completed: {
-      label: "AI Analyzed",
+      label: t("coachHistory.statusCompleted"),
       icon: CheckCircle2,
       cls: "bg-ice/10 text-ice border-ice/20",
       spin: false,
     },
     reviewed: {
-      label: "Instructor Reviewed",
+      label: t("coachHistory.statusReviewed"),
       icon: Star,
       cls: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
       spin: false,
@@ -207,6 +212,8 @@ function HistoryCard({
   onClick: () => void;
   index: number;
 }) {
+  const { t } = useTranslation();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -244,7 +251,9 @@ function HistoryCard({
             ) : (
               <Video className="w-3 h-3" />
             )}
-            {item.mediaType === "image" ? "Photo" : "Video"}
+            {item.mediaType === "image"
+              ? t("coachHistory.photoLabel")
+              : t("coachHistory.videoLabel")}
           </span>
         </div>
 
@@ -277,7 +286,7 @@ function HistoryCard({
         {/* Feedback preview */}
         <div className="space-y-1.5">
           <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-            AI Feedback
+            {t("coachHistory.aiFeedbackLabel")}
           </p>
           <ParsedFeedback feedback={item.aiFeedback} compact />
         </div>
@@ -285,7 +294,7 @@ function HistoryCard({
         {item.instructorFeedback && (
           <div className="pt-2 border-t border-white/[0.04] space-y-1">
             <p className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">
-              Instructor Note
+              {t("coachHistory.instructorNoteLabel")}
             </p>
             <p className="text-sm text-slate-400 line-clamp-1">
               {item.instructorFeedback}
@@ -305,6 +314,8 @@ function DetailModal({
   item: HistoryItem;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <AnimatePresence>
       <motion.div
@@ -381,7 +392,7 @@ function DetailModal({
             {/* AI Feedback */}
             <div>
               <h3 className="text-base font-heading font-bold text-snow mb-4">
-                AI Feedback
+                {t("coachHistory.modalAiFeedback")}
               </h3>
               <ParsedFeedback feedback={item.aiFeedback} />
             </div>
@@ -391,7 +402,7 @@ function DetailModal({
               <div className="rounded-xl bg-emerald-400/5 border border-emerald-400/15 p-5">
                 <h3 className="text-base font-heading font-bold text-emerald-400 mb-3 flex items-center gap-2">
                   <Star className="w-4 h-4" />
-                  Instructor Feedback
+                  {t("coachHistory.modalInstructorFeedback")}
                 </h3>
                 <ParsedFeedback feedback={item.instructorFeedback} />
               </div>
@@ -405,6 +416,7 @@ function DetailModal({
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function HistoryPage() {
+  const { t } = useTranslation();
   const [data, setData] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -454,7 +466,7 @@ export default function HistoryPage() {
             <div className="absolute inset-0 border-4 border-ice/20 rounded-full" />
             <div className="absolute inset-0 border-4 border-ice rounded-full border-t-transparent animate-spin" />
           </div>
-          <p className="text-slate-400 mt-4">Loading your history...</p>
+          <p className="text-slate-400 mt-4">{t("coachHistory.loadingText")}</p>
         </div>
       </div>
     );
@@ -469,7 +481,7 @@ export default function HistoryPage() {
           onClick={fetchHistory}
           className="px-5 py-2 rounded-xl bg-ice/10 text-ice text-sm font-semibold hover:bg-ice/20 transition-colors"
         >
-          Try Again
+          {t("coachHistory.tryAgain")}
         </button>
       </div>
     );
@@ -490,11 +502,13 @@ export default function HistoryPage() {
         >
           <div>
             <h1 className="text-2xl md:text-3xl font-heading font-bold text-snow">
-              Session History
+              {t("coachHistory.pageTitle")}
             </h1>
             <p className="text-slate-400 mt-1">
-              {data.length} {data.length === 1 ? "session" : "sessions"}{" "}
-              recorded
+              {data.length}{" "}
+              {data.length === 1
+                ? t("coachHistory.sessionCount")
+                : t("coachHistory.sessionCountPlural")}
             </p>
           </div>
 
@@ -508,10 +522,16 @@ export default function HistoryPage() {
                 onChange={(e) => setFilter(e.target.value as FilterOption)}
                 className="pl-8 pr-8 py-2 rounded-xl bg-[#1e293b]/60 border border-white/[0.06] text-sm text-slate-200 appearance-none outline-none hover:border-white/[0.12] transition-colors cursor-pointer"
               >
-                <option value="all">All Sessions</option>
-                <option value="pending">Processing</option>
-                <option value="completed">AI Analyzed</option>
-                <option value="reviewed">Instructor Reviewed</option>
+                <option value="all">{t("coachHistory.filterAll")}</option>
+                <option value="pending">
+                  {t("coachHistory.filterPending")}
+                </option>
+                <option value="completed">
+                  {t("coachHistory.filterCompleted")}
+                </option>
+                <option value="reviewed">
+                  {t("coachHistory.filterReviewed")}
+                </option>
               </select>
               <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             </div>
@@ -524,9 +544,9 @@ export default function HistoryPage() {
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 className="pl-8 pr-8 py-2 rounded-xl bg-[#1e293b]/60 border border-white/[0.06] text-sm text-slate-200 appearance-none outline-none hover:border-white/[0.12] transition-colors cursor-pointer"
               >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="status">By Status</option>
+                <option value="newest">{t("coachHistory.sortNewest")}</option>
+                <option value="oldest">{t("coachHistory.sortOldest")}</option>
+                <option value="status">{t("coachHistory.sortByStatus")}</option>
               </select>
               <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             </div>
@@ -544,6 +564,12 @@ export default function HistoryPage() {
                 f === "all"
                   ? data.length
                   : data.filter((d) => d.status === f).length;
+              const labelMap = {
+                all: t("coachHistory.filterAll"),
+                pending: t("coachHistory.statusPending"),
+                completed: t("coachHistory.statusCompleted"),
+                reviewed: t("coachHistory.statusReviewed"),
+              };
               return (
                 <button
                   key={f}
@@ -554,13 +580,7 @@ export default function HistoryPage() {
                       : "bg-white/[0.03] border-white/[0.06] text-slate-400 hover:border-white/[0.12] hover:text-slate-200"
                   }`}
                 >
-                  {f === "all"
-                    ? "All"
-                    : f === "pending"
-                    ? "Processing"
-                    : f === "completed"
-                    ? "AI Analyzed"
-                    : "Reviewed"}
+                  {labelMap[f]}
                   <span className="ml-1.5 opacity-60">{count}</span>
                 </button>
               );
@@ -578,12 +598,12 @@ export default function HistoryPage() {
               <Camera className="w-7 h-7 text-slate-600" />
             </div>
             <h3 className="text-lg font-semibold text-snow mb-2">
-              No sessions found
+              {t("coachHistory.noSessionsFound")}
             </h3>
             <p className="text-slate-400 text-sm max-w-xs">
               {filter !== "all"
-                ? "Try changing the filter to see more results."
-                : "Upload your first training session to get AI feedback."}
+                ? t("coachHistory.noSessionsFilterDescription")
+                : t("coachHistory.noSessionsDescription")}
             </p>
           </motion.div>
         ) : (
