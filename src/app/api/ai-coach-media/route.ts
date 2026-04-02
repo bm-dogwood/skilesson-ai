@@ -3,9 +3,57 @@ import cloudinary from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
+import { openai } from "@/lib/openai";
 
 const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434";
 
+async function generateFeedbackImage(feedback: any) {
+  try {
+    const prompt = `
+A clean ski coaching illustration.
+
+Show a skier demonstrating:
+${feedback.fix}
+
+Style:
+- minimal
+- instructional
+- arrows showing movement
+- professional coaching diagram
+`;
+
+    const res = await openai.images.generate({
+      model: "gpt-image-1",
+      prompt,
+      size: "1024x1024",
+    });
+
+    const image = res.data?.[0];
+    if (!image) return null;
+
+    // ✅ Handle base64 (BEST PRACTICE)
+    if (image.b64_json) {
+      const buffer = Buffer.from(image.b64_json, "base64");
+
+      const uploadRes: any = await new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream({ folder: "ai-coach-generated" }, (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          })
+          .end(buffer);
+      });
+
+      return uploadRes.secure_url;
+    }
+
+    // fallback
+    return image.url || null;
+  } catch (err) {
+    console.error("Image generation error:", err);
+    return null;
+  }
+}
 /* ------------------------------------------------------------------ */
 /* 🧠 STEP 1: IMAGE ANALYSIS (VISION MODEL)                            */
 /* ------------------------------------------------------------------ */
@@ -151,7 +199,7 @@ export async function POST(req: NextRequest) {
     if (!file) {
       return NextResponse.json({ success: false });
     }
-
+    const generateImageFlag = formData.get("generateImage") === "true";
     const buffer = Buffer.from(await file.arrayBuffer());
 
     /* -------------------- ☁️ Upload -------------------- */
@@ -182,6 +230,11 @@ export async function POST(req: NextRequest) {
     /* -------------------- 🧠 AI -------------------- */
     const description = await analyzeImageUrl(analysisUrl);
     const feedback = await generateCoachFeedback(description, session.userId);
+    let imageUrl = null;
+
+    if (generateImageFlag) {
+      imageUrl = await generateFeedbackImage(feedback);
+    }
 
     /* -------------------- 💾 Save -------------------- */
     const submission = await prisma.aISubmission.create({
@@ -190,7 +243,8 @@ export async function POST(req: NextRequest) {
         mediaUrl,
         mediaType,
         aiDescription: description,
-        aiFeedback: JSON.stringify(feedback), // ✅ IMPORTANT
+        aiFeedback: JSON.stringify(feedback),
+        aiImageUrl: imageUrl, // ✅ SAVE IMAGE
       },
     });
 
@@ -199,6 +253,7 @@ export async function POST(req: NextRequest) {
       success: true,
       data: {
         feedback,
+        image: imageUrl,
         submissionId: submission.id,
       },
     });

@@ -133,6 +133,7 @@ model AISubmission {
   aiDescription String
   aiFeedback    String
 
+  aiImageUrl String?
   instructorFeedback String?
 
   status   String @default("pending") // pending | reviewed
