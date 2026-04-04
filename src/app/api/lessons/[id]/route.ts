@@ -46,6 +46,20 @@ export async function GET(
 
     // 🎯 Extract progress safely
     const progress = lesson.progress?.[0] || null;
+    const upNext = await prisma.lesson.findMany({
+      where: {
+        id: { not: id },
+        sport: lesson.sport,
+      },
+      take: 4,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        duration: true,
+        thumbnailUrl: true,
+      },
+    });
 
     // 🚀 Clean response for frontend
     return NextResponse.json({
@@ -57,6 +71,7 @@ export async function GET(
         status: progress?.status || "IN_PROGRESS",
         timestamp: progress?.timestamp || 0,
       },
+      upNext,
     });
   } catch (err) {
     console.error("GET LESSON ERROR:", err);

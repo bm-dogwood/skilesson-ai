@@ -46,6 +46,10 @@ model Lesson {
   assetId      String?
   thumbnailUrl String?
 
+  subtitlesEnUrl  String?   // EN .vtt URL
+  subtitlesEsUrl  String?   // ES .vtt URL
+  subtitlesStatus String?   @default("pending") // pending | processing | done | failed
+
   duration    Int?
     createdAt   DateTime @default(now())   // ✅ ADD THIS
   updatedAt   DateTime @updatedAt 

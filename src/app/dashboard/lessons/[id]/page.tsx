@@ -217,7 +217,26 @@ export default function LessonDetailPage() {
                     onTimeUpdate={handleTimeUpdate}
                     className="w-full h-full object-cover"
                     poster={lesson.thumbnailUrl}
-                  />
+                  >
+                    {lesson.subtitlesEnUrl && (
+                      <track
+                        kind="subtitles"
+                        src={`/api/subtitles/${lesson.id}/en`}
+                        srcLang="en"
+                        label="English"
+                        default
+                      />
+                    )}
+                    {lesson.subtitlesEsUrl && (
+                      <track
+                        kind="subtitles"
+                        src={`/api/subtitles/${lesson.id}/es`}
+                        srcLang="es"
+                        label="Español"
+                      />
+                    )}
+                  </video>
+
                   {/* Watch progress bar */}
                   {watchedPct > 0 && watchedPct < 99 && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10 pointer-events-none">
