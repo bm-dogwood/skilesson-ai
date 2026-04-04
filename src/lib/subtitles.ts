@@ -28,7 +28,9 @@ async function transcribe(
   buffer: Buffer,
   language: "en" | "es"
 ): Promise<{ start: number; end: number; text: string }[]> {
-  const file = new File([buffer], "video.mp4", { type: "video/mp4" });
+  // ✅ Convert to Uint8Array to satisfy TypeScript's BlobPart type
+  const uint8Array = new Uint8Array(buffer);
+  const file = new File([uint8Array], "video.mp4", { type: "video/mp4" });
 
   const result = await openai.audio.transcriptions.create({
     file,
