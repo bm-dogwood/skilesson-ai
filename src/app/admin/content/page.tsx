@@ -21,36 +21,45 @@ interface Lesson {
   uploadId: string | null;
   createdAt: string;
   updatedAt: string;
-  user: {
-    id: string;
-    name: string | null;
-    email: string | null;
-  };
-  _count: {
-    progress: number;
-  };
+  user: { id: string; name: string | null; email: string | null };
+  _count: { progress: number };
   progress: LessonProgress[];
 }
 
 const formatDuration = (seconds: number | null): string => {
   if (!seconds || seconds === 0) return "0:00";
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = seconds % 60;
-
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, "0")}:${remainingSeconds
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0)
+    return `${h}:${m.toString().padStart(2, "0")}:${s
       .toString()
       .padStart(2, "0")}`;
-  }
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 };
 
+const LEVEL_STYLE: Record<string, { bg: string; text: string }> = {
+  beginner: { bg: "rgba(52,211,153,0.15)", text: "#34d399" },
+  intermediate: { bg: "rgba(245,158,11,0.15)", text: "#f59e0b" },
+  advanced: { bg: "rgba(244,63,94,0.15)", text: "#f43f5e" },
+};
+
+function getLevelStyle(level: string) {
+  return (
+    LEVEL_STYLE[level?.toLowerCase()] ?? {
+      bg: "rgba(71,85,105,0.2)",
+      text: "#94a3b8",
+    }
+  );
+}
+
 export default function VideosPage() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchLessons();
@@ -59,17 +68,12 @@ export default function VideosPage() {
   const fetchLessons = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/lessons");
-      const data = await response.json();
-
-      if (data.success && Array.isArray(data.lessons)) {
-        setLessons(data.lessons);
-      } else {
-        throw new Error("Failed to fetch lessons");
-      }
+      const res = await fetch("/api/lessons");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.lessons)) setLessons(data.lessons);
+      else throw new Error("Failed to fetch lessons");
     } catch (err) {
       setError("Failed to load lessons");
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -77,421 +81,655 @@ export default function VideosPage() {
 
   const currentUserRole = (session?.user as any)?.role || "student";
 
-  // Calculate overall statistics
+  const sports = [
+    "all",
+    ...Array.from(new Set(lessons.map((l) => l.sport).filter(Boolean))),
+  ];
+  const filtered = lessons.filter((l) => {
+    const matchSport = filter === "all" || l.sport === filter;
+    const matchSearch =
+      !search || l.title.toLowerCase().includes(search.toLowerCase());
+    return matchSport && matchSearch;
+  });
+
   const totalLessons = lessons.length;
-  const totalStudents = lessons.reduce(
-    (sum, l) => sum + (l._count?.progress || 0),
+  const totalEnrollments = lessons.reduce(
+    (s, l) => s + (l._count?.progress || 0),
     0
   );
   const totalCompleted = lessons.reduce(
-    (sum, l) =>
-      sum + (l.progress?.filter((p) => p.status === "COMPLETED").length || 0),
+    (s, l) =>
+      s + (l.progress?.filter((p) => p.status === "COMPLETED").length || 0),
     0
   );
+  const completionRate =
+    totalEnrollments > 0
+      ? Math.round((totalCompleted / totalEnrollments) * 100)
+      : 0;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 max-w-7xl">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-500 dark:text-gray-400">
-                Loading lessons...
-              </p>
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,500;1,400&display=swap');
+
+        :root {
+          --navy:   #0f172a; --surface: #141f35; --card: #1a2744;
+          --border: rgba(71,85,105,0.25); --snow: #f8fafc;
+          --muted:  #94a3b8; --slate: #475569;
+          --ice: #38bdf8; --gold: #f59e0b; --rose: #f43f5e; --green: #34d399;
+        }
+        .vp * { box-sizing: border-box; font-family: 'Sora', sans-serif; }
+
+        /* ── Stat cards ── */
+        .vp-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.9rem; margin-bottom: 2rem; }
+        .vp-stat {
+          background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+          padding: 1.25rem 1.4rem; position: relative; overflow: hidden;
+          transition: transform 0.15s, border-color 0.2s;
+        }
+        .vp-stat:hover { transform: translateY(-2px); }
+        .vp-stat::before {
+          content:''; position:absolute; inset:0;
+          background: linear-gradient(135deg, rgba(56,189,248,0.03) 0%, transparent 60%);
+          pointer-events:none;
+        }
+        .vp-stat-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.8rem; }
+        .vp-stat-icon {
+          width:32px; height:32px; border-radius:8px;
+          display:flex; align-items:center; justify-content:center;
+        }
+        .vp-stat-icon svg { width:15px; height:15px; }
+        .vp-stat-val { font-family:'Lora',serif; font-size:1.7rem; font-weight:400; color:var(--snow); line-height:1; }
+        .vp-stat-lbl { font-size:0.67rem; color:var(--muted); font-weight:500; margin-top:0.25rem; letter-spacing:0.04em; }
+
+        /* ── Toolbar ── */
+        .vp-toolbar {
+          display: flex; align-items: center; gap: 0.75rem;
+          margin-bottom: 1.5rem; flex-wrap: wrap;
+        }
+        .vp-search-wrap { position: relative; flex: 1; min-width: 200px; }
+        .vp-search-icon {
+          position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%);
+          width: 14px; height: 14px; stroke: var(--slate); fill: none; stroke-width: 2;
+          pointer-events: none;
+        }
+        .vp-search {
+          width: 100%; padding: 0.6rem 0.9rem 0.6rem 2.2rem;
+          background: var(--card); border: 1px solid var(--border);
+          border-radius: 9px; color: var(--snow);
+          font-family: 'Sora', sans-serif; font-size: 0.8rem; outline: none;
+          transition: border-color 0.15s;
+        }
+        .vp-search::placeholder { color: var(--slate); }
+        .vp-search:focus { border-color: var(--ice); }
+
+        .vp-filters { display: flex; gap: 0.45rem; flex-wrap: wrap; }
+        .vp-filter {
+          padding: 0.45rem 0.9rem; border-radius: 7px; font-size: 0.7rem;
+          font-weight: 500; border: 1px solid var(--border);
+          background: rgba(255,255,255,0.04); color: var(--muted);
+          cursor: pointer; transition: all 0.15s;
+          font-family: 'Sora', sans-serif; text-transform: capitalize;
+        }
+        .vp-filter:hover  { border-color: var(--ice); color: var(--ice); }
+        .vp-filter.active { background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.35); color: var(--ice); }
+
+        /* ── Add button ── */
+        .vp-add-btn {
+          display: inline-flex; align-items: center; gap: 0.45rem;
+          padding: 0.6rem 1.1rem; border-radius: 9px;
+          background: var(--ice); color: var(--navy);
+          font-family: 'Sora', sans-serif; font-size: 0.78rem; font-weight: 600;
+          border: none; cursor: pointer; text-decoration: none;
+          transition: opacity 0.15s, transform 0.1s; white-space: nowrap;
+        }
+        .vp-add-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .vp-add-btn svg { width: 13px; height: 13px; }
+
+        /* ── Grid ── */
+        .vp-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; }
+
+        /* ── Card ── */
+        .vp-card {
+          background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+          overflow: hidden; display: flex; flex-direction: column;
+          transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+        }
+        .vp-card:hover {
+          border-color: rgba(56,189,248,0.3); transform: translateY(-3px);
+          box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+
+        /* Thumbnail */
+        .vp-thumb {
+          position: relative; aspect-ratio: 16/9;
+          background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+          overflow: hidden;
+        }
+        .vp-thumb img { width:100%; height:100%; object-fit:cover; transition: transform 0.4s; }
+        .vp-card:hover .vp-thumb img { transform: scale(1.04); }
+        .vp-thumb-placeholder {
+          display: flex; align-items: center; justify-content: center; height: 100%;
+        }
+        .vp-thumb-placeholder svg { width:40px; height:40px; stroke:rgba(56,189,248,0.2); }
+
+        /* Play overlay */
+        .vp-play-overlay {
+          position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+          background: rgba(0,0,0,0); transition: background 0.2s;
+        }
+        .vp-card:hover .vp-play-overlay { background: rgba(0,0,0,0.3); }
+        .vp-play-btn {
+          width: 44px; height: 44px; border-radius: 50%;
+          background: rgba(56,189,248,0.9); display:flex; align-items:center; justify-content:center;
+          opacity: 0; transform: scale(0.8); transition: opacity 0.2s, transform 0.2s;
+        }
+        .vp-card:hover .vp-play-btn { opacity: 1; transform: scale(1); }
+        .vp-play-btn svg { width:18px; height:18px; fill:var(--navy); margin-left:2px; }
+
+        /* Badges on thumb */
+        .vp-level-badge {
+          position: absolute; top: 0.65rem; left: 0.65rem;
+          padding: 0.18rem 0.55rem; border-radius: 5px;
+          font-size: 0.62rem; font-weight: 600; letter-spacing: 0.06em;
+          text-transform: capitalize;
+        }
+        .vp-duration {
+          position: absolute; bottom: 0.65rem; right: 0.65rem;
+          background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+          color: var(--snow); font-size: 0.65rem; font-weight: 600;
+          padding: 0.2rem 0.55rem; border-radius: 5px; font-variant-numeric: tabular-nums;
+        }
+
+        /* Card body */
+        .vp-body { padding: 1.1rem 1.25rem; display:flex; flex-direction:column; gap:0.85rem; flex:1; }
+
+        .vp-title-row { display:flex; align-items:flex-start; justify-content:space-between; gap:0.5rem; }
+        .vp-title { font-size:0.88rem; font-weight:600; color:var(--snow); line-height:1.35; flex:1; }
+        .vp-sport {
+          font-size:0.62rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase;
+          padding:0.2rem 0.55rem; border-radius:5px;
+          background:rgba(56,189,248,0.08); color:var(--ice); border:1px solid rgba(56,189,248,0.15);
+          white-space:nowrap; flex-shrink:0;
+        }
+        .vp-desc { font-size:0.74rem; color:var(--muted); line-height:1.55; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+
+        /* Mini stats */
+        .vp-mini-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:0.5rem; }
+        .vp-mini { text-align:center; padding:0.55rem 0.35rem; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid var(--border); }
+        .vp-mini-val { font-size:0.95rem; font-weight:600; color:var(--snow); line-height:1; }
+        .vp-mini-lbl { font-size:0.58rem; color:var(--slate); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em; }
+
+        /* Progress bar */
+        .vp-progress-row { display:flex; justify-content:space-between; font-size:0.62rem; color:var(--slate); margin-bottom:0.35rem; }
+        .vp-progress-track { height:3px; background:rgba(71,85,105,0.3); border-radius:2px; overflow:hidden; }
+        .vp-progress-fill  { height:100%; background:linear-gradient(90deg, var(--ice), #7dd3fc); border-radius:2px; transition:width 0.5s; }
+
+        /* Meta row */
+        .vp-meta { display:flex; align-items:center; justify-content:space-between; padding-top:0.75rem; border-top:1px solid var(--border); }
+        .vp-meta-item { display:flex; align-items:center; gap:0.35rem; font-size:0.65rem; color:var(--slate); }
+        .vp-meta-item svg { width:12px; height:12px; }
+
+        /* Actions */
+        .vp-actions { display:flex; gap:0.5rem; }
+        .vp-btn-primary {
+          flex:1; text-align:center; padding:0.6rem; border-radius:8px;
+          background:rgba(56,189,248,0.1); color:var(--ice);
+          border:1px solid rgba(56,189,248,0.2); font-size:0.74rem; font-weight:600;
+          text-decoration:none; transition:all 0.15s;
+        }
+        .vp-btn-primary:hover { background:rgba(56,189,248,0.18); border-color:rgba(56,189,248,0.4); }
+        .vp-btn-ghost {
+          padding:0.6rem 0.85rem; border-radius:8px;
+          background:rgba(255,255,255,0.04); color:var(--muted);
+          border:1px solid var(--border); font-size:0.74rem; font-weight:500;
+          text-decoration:none; transition:all 0.15s;
+        }
+        .vp-btn-ghost:hover { border-color:var(--slate); color:var(--snow); }
+
+        /* Loading / Error / Empty */
+        .vp-center { display:flex; align-items:center; justify-content:center; min-height:300px; flex-direction:column; gap:1rem; }
+        .vp-spinner { width:22px; height:22px; border:2px solid var(--border); border-top-color:var(--ice); border-radius:50%; animation:spin 0.7s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        .vp-empty { text-align:center; padding:4rem 2rem; }
+        .vp-empty-icon {
+          width:56px; height:56px; margin:0 auto 1.25rem;
+          background:rgba(56,189,248,0.07); border:1px solid rgba(56,189,248,0.15);
+          border-radius:14px; display:flex; align-items:center; justify-content:center;
+        }
+        .vp-empty-icon svg { width:24px; height:24px; stroke:var(--ice); }
+        .vp-empty h3 { font-family:'Lora',serif; font-size:1.1rem; color:var(--snow); margin:0 0 0.4rem; font-weight:400; }
+        .vp-empty p  { font-size:0.78rem; color:var(--muted); margin:0 0 1.25rem; }
+
+        .vp-error { background:rgba(244,63,94,0.07); border:1px solid rgba(244,63,94,0.2); border-radius:14px; padding:2rem; text-align:center; }
+        .vp-error svg { width:32px; height:32px; stroke:var(--rose); margin:0 auto 0.75rem; display:block; }
+        .vp-error h3 { color:var(--snow); font-size:0.9rem; margin:0 0 0.35rem; }
+        .vp-error p  { color:var(--muted); font-size:0.78rem; margin:0 0 1rem; }
+        .vp-retry {
+          padding:0.55rem 1.1rem; border-radius:8px; background:rgba(244,63,94,0.12);
+          color:var(--rose); border:1px solid rgba(244,63,94,0.25);
+          font-family:'Sora',sans-serif; font-size:0.76rem; font-weight:600; cursor:pointer;
+          transition:all 0.15s;
+        }
+        .vp-retry:hover { background:rgba(244,63,94,0.2); }
+
+        @media(max-width:1200px) { .vp-grid { grid-template-columns:repeat(2,1fr); } }
+        @media(max-width:900px)  { .vp-stats { grid-template-columns:repeat(3,1fr); } }
+        @media(max-width:700px)  { .vp-grid { grid-template-columns:1fr; } .vp-stats { grid-template-columns:1fr 1fr; } }
+      `}</style>
+
+      <div className="vp">
+        {/* ── Header ── */}
+        <p
+          style={{
+            fontSize: "0.65rem",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "var(--ice)",
+            marginBottom: "0.35rem",
+          }}
+        >
+          Content
+        </p>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "2rem",
+            flexWrap: "wrap",
+            gap: "1rem",
+          }}
+        >
+          <div>
+            <h1
+              style={{
+                fontFamily: "'Lora',serif",
+                fontSize: "1.9rem",
+                fontWeight: 400,
+                color: "var(--snow)",
+                margin: "0 0 0.3rem",
+              }}
+            >
+              Lesson Library
+            </h1>
+            <p
+              style={{ fontSize: "0.75rem", color: "var(--muted)", margin: 0 }}
+            >
+              Browse, manage and track all available lessons
+            </p>
+          </div>
+          {(currentUserRole === "admin" ||
+            currentUserRole === "instructor") && (
+            <Link href="/admin/content/add-content" className="vp-add-btn">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              New Lesson
+            </Link>
+          )}
+        </div>
+
+        {/* ── Stat cards ── */}
+        <div className="vp-stats">
+          {[
+            {
+              label: "Total Lessons",
+              value: totalLessons,
+              color: "#38bdf8",
+              icon: (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                  <path
+                    d="m10 8 5 3-5 3V8z"
+                    fill="currentColor"
+                    stroke="none"
+                  />
+                  <path d="M8 21h8M12 17v4" />
+                </svg>
+              ),
+            },
+            {
+              label: "Total Enrollments",
+              value: totalEnrollments,
+              color: "#34d399",
+              icon: (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              ),
+            },
+            {
+              label: "Completion Rate",
+              value: `${completionRate}%`,
+              color: "#f59e0b",
+              icon: (
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                  <polyline points="17 6 23 6 23 12" />
+                </svg>
+              ),
+            },
+          ].map((s) => (
+            <div className="vp-stat" key={s.label}>
+              <div className="vp-stat-top">
+                <div
+                  className="vp-stat-icon"
+                  style={{
+                    background: `${s.color}18`,
+                    border: `1px solid ${s.color}30`,
+                  }}
+                >
+                  <svg
+                    style={{ width: 15, height: 15, stroke: s.color }}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    {s.icon}
+                  </svg>
+                </div>
+              </div>
+              <div className="vp-stat-val">{s.value}</div>
+              <div className="vp-stat-lbl">{s.label}</div>
             </div>
+          ))}
+        </div>
+
+        {/* ── Toolbar ── */}
+        <div className="vp-toolbar">
+          <div className="vp-search-wrap">
+            <svg className="vp-search-icon" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              className="vp-search"
+              placeholder="Search lessons…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="vp-filters">
+            {sports.map((s) => (
+              <button
+                key={s}
+                className={`vp-filter${filter === s ? " active" : ""}`}
+                onClick={() => setFilter(s)}
+              >
+                {s === "all" ? "All Sports" : s}
+              </button>
+            ))}
           </div>
         </div>
-      </div>
-    );
-  }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 max-w-7xl">
-          <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
+        {/* ── Content ── */}
+        {loading ? (
+          <div className="vp-center">
+            <div className="vp-spinner" />
+            <span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>
+              Loading lessons…
+            </span>
+          </div>
+        ) : error ? (
+          <div className="vp-error">
             <svg
-              className="w-12 h-12 text-red-500 mx-auto mb-3"
-              fill="none"
-              stroke="currentColor"
               viewBox="0 0 24 24"
+              fill="none"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4m0 4h.01" />
             </svg>
-            <h3 className="text-lg font-semibold text-red-800 dark:text-red-400 mb-2">
-              Error Loading Lessons
-            </h3>
-            <p className="text-red-600 dark:text-red-300">{error}</p>
-            <button
-              onClick={fetchLessons}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
+            <h3>Failed to load lessons</h3>
+            <p>{error}</p>
+            <button className="vp-retry" onClick={fetchLessons}>
               Try Again
             </button>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 max-w-7xl">
-        {/* Header Section with Stats */}
-        <div className="mb-12">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                </span>
-                Lesson Library
-              </div>
-              <h1 className="text-4xl lg:text-5xl font-bold tracking-tight bg-gradient-to-r from-gray-900 via-primary to-gray-900 dark:from-white dark:via-primary-400 dark:to-white bg-clip-text text-transparent">
-                Lessons Library
-              </h1>
-              <p className="text-gray-500 dark:text-gray-400 mt-3 text-base max-w-2xl">
-                Browse, manage, and track all available lessons. Create engaging
-                content for your students.
-              </p>
-            </div>
-            {(currentUserRole === "admin" ||
-              currentUserRole === "instructor") && (
-              <Link
-                href="/admin/content/add-content"
-                className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-primary-600 text-white rounded-xl hover:shadow-lg hover:shadow-primary/25 transition-all duration-300 text-sm font-semibold"
+        ) : filtered.length === 0 ? (
+          <div className="vp-empty">
+            <div className="vp-empty-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <svg
-                  className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                Create New Lesson
-              </Link>
-            )}
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                    Total Lessons
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {totalLessons}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-blue-600 dark:text-blue-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                    />
-                  </svg>
-                </div>
-              </div>
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <path d="m10 8 5 3-5 3V8z" fill="currentColor" stroke="none" />
+                <path d="M8 21h8M12 17v4" />
+              </svg>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                    Total Enrollments
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {totalStudents}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-emerald-600 dark:text-emerald-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                    Completion Rate
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {totalStudents > 0
-                      ? Math.round((totalCompleted / totalStudents) * 100)
-                      : 0}
-                    %
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-xl flex items-center justify-center">
-                  <svg
-                    className="w-6 h-6 text-purple-600 dark:text-purple-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Lessons Grid */}
-        {lessons.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 max-w-lg mx-auto shadow-sm border border-gray-100 dark:border-gray-700">
-              <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg
-                  className="w-12 h-12 text-gray-400 dark:text-gray-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                No lessons yet
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">
-                Get started by creating your first lesson and share knowledge
-                with your students.
-              </p>
-              {(currentUserRole === "instructor" ||
-                currentUserRole === "admin") && (
+            <h3>
+              {lessons.length === 0 ? "No lessons yet" : "No results found"}
+            </h3>
+            <p>
+              {lessons.length === 0
+                ? "Create your first lesson to get started."
+                : "Try a different search or filter."}
+            </p>
+            {lessons.length === 0 &&
+              (currentUserRole === "admin" ||
+                currentUserRole === "instructor") && (
                 <Link
-                  href="/dashboard/lessons/create"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-primary-600 text-white rounded-xl hover:shadow-lg transition-all text-sm font-medium"
+                  href="/admin/content/add-content"
+                  className="vp-add-btn"
+                  style={{ display: "inline-flex" }}
                 >
                   <svg
-                    className="w-4 h-4"
+                    viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    viewBox="0 0 24 24"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    style={{ width: 13, height: 13 }}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
+                    <path d="M12 5v14M5 12h14" />
                   </svg>
-                  Create your first lesson
+                  Create First Lesson
                 </Link>
               )}
-            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {lessons.map((lesson) => {
+          <div className="vp-grid">
+            {filtered.map((lesson) => {
               const completedCount =
                 lesson.progress?.filter((p) => p.status === "COMPLETED")
                   .length || 0;
               const inProgressCount =
                 lesson.progress?.filter((p) => p.status === "IN_PROGRESS")
                   .length || 0;
-              const totalStudents = lesson._count?.progress || 0;
-              const completionRate =
-                totalStudents > 0 ? (completedCount / totalStudents) * 100 : 0;
+              const totalSt = lesson._count?.progress || 0;
+              const rate = totalSt > 0 ? (completedCount / totalSt) * 100 : 0;
+              const lvStyle = getLevelStyle(lesson.level);
 
               return (
-                <div
-                  key={lesson.id}
-                  className="group bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col"
-                >
+                <div className="vp-card" key={lesson.id}>
                   {/* Thumbnail */}
-                  <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 overflow-hidden">
+                  <div className="vp-thumb">
                     {lesson.thumbnailUrl ? (
-                      <img
-                        src={lesson.thumbnailUrl}
-                        alt={lesson.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
+                      <img src={lesson.thumbnailUrl} alt={lesson.title} />
                     ) : (
-                      <div className="flex items-center justify-center h-full">
+                      <div className="vp-thumb-placeholder">
                         <svg
-                          className="w-16 h-16 text-gray-300 dark:text-gray-600"
-                          fill="none"
-                          stroke="currentColor"
                           viewBox="0 0 24 24"
+                          fill="none"
+                          strokeWidth="1.25"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                          />
+                          <rect x="2" y="3" width="20" height="14" rx="2" />
+                          <path d="m10 8 5 3-5 3V8z" />
                         </svg>
                       </div>
                     )}
-
-                    {/* Duration badge */}
-                    {lesson.duration && lesson.duration > 0 && (
-                      <div className="absolute bottom-3 right-3 bg-black/80 backdrop-blur-sm text-white text-xs px-2.5 py-1 rounded-lg font-mono font-medium">
-                        {formatDuration(lesson.duration)}
+                    <div className="vp-play-overlay">
+                      <div className="vp-play-btn">
+                        <svg viewBox="0 0 24 24">
+                          <path d="M5 3l14 9-14 9V3z" />
+                        </svg>
                       </div>
-                    )}
-
-                    {/* Level badge overlay */}
-                    <div className="absolute top-3 left-3">
-                      <span
-                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold backdrop-blur-sm ${
-                          lesson.level === "Beginner"
-                            ? "bg-green-500/90 text-white"
-                            : lesson.level === "Intermediate"
-                            ? "bg-orange-500/90 text-white"
-                            : lesson.level === "Advanced"
-                            ? "bg-red-500/90 text-white"
-                            : "bg-gray-500/90 text-white"
-                        }`}
-                      >
-                        {lesson.level || "Beginner"}
-                      </span>
                     </div>
+                    <span
+                      className="vp-level-badge"
+                      style={{ background: lvStyle.bg, color: lvStyle.text }}
+                    >
+                      {lesson.level || "Beginner"}
+                    </span>
+                    {lesson.duration && lesson.duration > 0 && (
+                      <span className="vp-duration">
+                        {formatDuration(lesson.duration)}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Card Content */}
-                  <div className="p-6 flex flex-col flex-1 gap-4">
-                    {/* Title and Sport */}
+                  {/* Body */}
+                  <div className="vp-body">
                     <div>
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-1 group-hover:text-primary transition-colors">
-                          {lesson.title}
-                        </h3>
-                        <span className="px-2 py-1 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                      <div className="vp-title-row">
+                        <span className="vp-title">{lesson.title}</span>
+                        <span className="vp-sport">
                           {lesson.sport || "General"}
                         </span>
                       </div>
-
-                      {/* Description */}
-                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                      <p className="vp-desc" style={{ marginTop: "0.4rem" }}>
                         {lesson.description || "No description provided"}
                       </p>
                     </div>
 
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="text-center p-2 rounded-xl bg-gray-50 dark:bg-gray-700/30">
-                        <div className="text-lg font-bold text-gray-800 dark:text-gray-200">
-                          {totalStudents}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          Enrolled
-                        </div>
+                    {/* Mini stats */}
+                    <div className="vp-mini-stats">
+                      <div className="vp-mini">
+                        <div className="vp-mini-val">{totalSt}</div>
+                        <div className="vp-mini-lbl">Enrolled</div>
                       </div>
-                      <div className="text-center p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20">
-                        <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                      <div
+                        className="vp-mini"
+                        style={{
+                          borderColor: "rgba(52,211,153,0.15)",
+                          background: "rgba(52,211,153,0.05)",
+                        }}
+                      >
+                        <div
+                          className="vp-mini-val"
+                          style={{ color: "#34d399" }}
+                        >
                           {completedCount}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          Completed
-                        </div>
+                        <div className="vp-mini-lbl">Done</div>
                       </div>
-                      <div className="text-center p-2 rounded-xl bg-amber-50 dark:bg-amber-900/20">
-                        <div className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                      <div
+                        className="vp-mini"
+                        style={{
+                          borderColor: "rgba(245,158,11,0.15)",
+                          background: "rgba(245,158,11,0.05)",
+                        }}
+                      >
+                        <div
+                          className="vp-mini-val"
+                          style={{ color: "#f59e0b" }}
+                        >
                           {inProgressCount}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          In Progress
-                        </div>
+                        <div className="vp-mini-lbl">Active</div>
                       </div>
                     </div>
 
-                    {/* Progress Bar */}
-                    {totalStudents > 0 && (
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                          <span>Completion Rate</span>
-                          <span>{Math.round(completionRate)}%</span>
+                    {/* Progress */}
+                    {totalSt > 0 && (
+                      <div>
+                        <div className="vp-progress-row">
+                          <span>Completion</span>
+                          <span
+                            style={{ color: "var(--snow)", fontWeight: 600 }}
+                          >
+                            {Math.round(rate)}%
+                          </span>
                         </div>
-                        <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className="vp-progress-track">
                           <div
-                            className="h-full bg-gradient-to-r from-primary to-primary-600 rounded-full transition-all duration-500"
-                            style={{ width: `${completionRate}%` }}
+                            className="vp-progress-fill"
+                            style={{ width: `${rate}%` }}
                           />
                         </div>
                       </div>
                     )}
 
-                    {/* Meta info */}
-                    <div className="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-700">
-                      <div className="flex items-center gap-1.5">
+                    {/* Meta */}
+                    <div className="vp-meta">
+                      <div className="vp-meta-item">
                         <svg
-                          className="w-3.5 h-3.5"
+                          viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
-                          viewBox="0 0 24 24"
+                          strokeWidth="1.75"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                          />
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="4" />
                         </svg>
-                        <span className="truncate max-w-[100px]">
+                        <span
+                          style={{
+                            maxWidth: 100,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
                           {lesson.user?.name ||
                             lesson.user?.email?.split("@")[0] ||
                             "Instructor"}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="vp-meta-item">
                         <svg
-                          className="w-3.5 h-3.5"
+                          viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
-                          viewBox="0 0 24 24"
+                          strokeWidth="1.75"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
+                          <rect x="3" y="4" width="18" height="18" rx="2" />
+                          <path d="M16 2v4M8 2v4M3 10h18" />
                         </svg>
                         <span>
                           {new Date(lesson.createdAt).toLocaleDateString(
@@ -503,10 +741,10 @@ export default function VideosPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-3 pt-2">
+                    <div className="vp-actions">
                       <Link
                         href={`/admin/content/view-content/${lesson.id}`}
-                        className="flex-1 text-center px-4 py-2.5 bg-gradient-to-r from-primary to-primary-600 text-white rounded-xl hover:shadow-md transition-all text-sm font-semibold"
+                        className="vp-btn-primary"
                       >
                         View Lesson
                       </Link>
@@ -514,7 +752,7 @@ export default function VideosPage() {
                         currentUserRole === "instructor") && (
                         <Link
                           href={`/admin/content/edit-content/${lesson.id}`}
-                          className="px-4 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                          className="vp-btn-ghost"
                         >
                           Edit
                         </Link>
@@ -527,6 +765,6 @@ export default function VideosPage() {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

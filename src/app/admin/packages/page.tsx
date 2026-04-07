@@ -6,11 +6,11 @@ import {
   PencilIcon,
   TrashIcon,
   XMarkIcon,
-  CheckIcon,
   CurrencyDollarIcon,
   TagIcon,
   CubeIcon,
   SparklesIcon,
+  CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 
 interface Package {
@@ -22,11 +22,47 @@ interface Package {
   isActive: boolean;
 }
 
+const TIER_COLORS: Record<
+  string,
+  { bg: string; text: string; border: string; glow: string }
+> = {
+  explorer: {
+    bg: "rgba(56,189,248,0.08)",
+    text: "#38bdf8",
+    border: "rgba(56,189,248,0.2)",
+    glow: "rgba(56,189,248,0.15)",
+  },
+  summit: {
+    bg: "rgba(245,158,11,0.08)",
+    text: "#f59e0b",
+    border: "rgba(245,158,11,0.2)",
+    glow: "rgba(245,158,11,0.15)",
+  },
+  apex: {
+    bg: "rgba(244,63,94,0.08)",
+    text: "#f43f5e",
+    border: "rgba(244,63,94,0.2)",
+    glow: "rgba(244,63,94,0.15)",
+  },
+};
+
+function getTierStyle(tier: string) {
+  return (
+    TIER_COLORS[tier?.toLowerCase()] ?? {
+      bg: "rgba(71,85,105,0.15)",
+      text: "#94a3b8",
+      border: "rgba(71,85,105,0.3)",
+      glow: "rgba(71,85,105,0.1)",
+    }
+  );
+}
+
 export default function AdminPackagesPage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<"add" | "edit" | null>(null);
   const [selected, setSelected] = useState<Package | null>(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: "",
     tier: "",
@@ -47,6 +83,7 @@ export default function AdminPackagesPage() {
 
   function openAdd() {
     setForm({ name: "", tier: "", priceMonthly: 0, priceYearly: 0 });
+    setSelected(null);
     setModal("add");
   }
 
@@ -62,323 +99,561 @@ export default function AdminPackagesPage() {
   }
 
   async function save() {
+    setSaving(true);
     const method = modal === "edit" ? "PUT" : "POST";
     const url =
       modal === "edit"
         ? `/api/admin/packages/${selected?.id}`
         : "/api/admin/packages";
-
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
-
     if (res.ok) {
-      fetchPackages();
+      await fetchPackages();
       setModal(null);
     }
+    setSaving(false);
   }
 
   async function remove(id: string) {
-    if (confirm("Are you sure you want to delete this package?")) {
+    if (confirm("Delete this package? This cannot be undone.")) {
       await fetch(`/api/admin/packages/${id}`, { method: "DELETE" });
       fetchPackages();
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-[400px] bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading packages...</p>
-        </div>
-      </div>
-    );
-  }
+  const STAT_CARDS = [
+    {
+      label: "Total Packages",
+      value: packages.length,
+      icon: CubeIcon,
+      color: "#38bdf8",
+    },
+    {
+      label: "Active Plans",
+      value: packages.filter((p) => p.isActive).length,
+      icon: CheckCircleIcon,
+      color: "#34d399",
+    },
+    {
+      label: "Avg Monthly Price",
+      value: `$${
+        packages.length
+          ? (
+              packages.reduce((s, p) => s + p.priceMonthly, 0) / packages.length
+            ).toFixed(0)
+          : "0"
+      }`,
+      icon: CurrencyDollarIcon,
+      color: "#f59e0b",
+    },
+    {
+      label: "Unique Tiers",
+      value: new Set(packages.map((p) => p.tier)).size,
+      icon: TagIcon,
+      color: "#f43f5e",
+    },
+  ];
 
   return (
-    <div className="w-full bg-gray-50">
-      {/* Main Content Container */}
-      <div className="relative w-full px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gray-900 rounded-xl">
-                  <SparklesIcon className="h-6 w-6 text-gray-400" />
-                </div>
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                    Package Manager
-                  </h1>
-                  <p className="text-gray-500 text-sm mt-1">
-                    Manage your subscription plans
-                  </p>
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={openAdd}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-xl transition-all duration-200 w-full sm:w-auto justify-center"
-            >
-              <PlusIcon className="h-5 w-5" />
-              <span>Add Package</span>
-            </button>
-          </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,500;1,400&display=swap');
+
+        :root {
+          --navy:   #0f172a;
+          --surface:#141f35;
+          --card:   #1a2744;
+          --border: rgba(71,85,105,0.25);
+          --snow:   #f8fafc;
+          --muted:  #94a3b8;
+          --slate:  #475569;
+          --ice:    #38bdf8;
+          --gold:   #f59e0b;
+          --rose:   #f43f5e;
+          --green:  #34d399;
+        }
+
+        .pkg-page * { box-sizing: border-box; font-family: 'Sora', sans-serif; }
+
+        /* ── Stat cards ── */
+        .pkg-stat-grid {
+          display: grid; grid-template-columns: repeat(4,1fr); gap: 0.9rem; margin-bottom: 2rem;
+        }
+        .pkg-stat {
+          background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+          padding: 1.25rem 1.4rem; position: relative; overflow: hidden;
+          transition: border-color 0.2s, transform 0.15s;
+        }
+        .pkg-stat:hover { transform: translateY(-2px); }
+        .pkg-stat::before {
+          content:''; position:absolute; inset:0;
+          background: linear-gradient(135deg, rgba(56,189,248,0.03) 0%, transparent 60%);
+          pointer-events:none;
+        }
+        .pkg-stat-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.8rem; }
+        .pkg-stat-icon {
+          width:32px; height:32px; border-radius:8px;
+          display:flex; align-items:center; justify-content:center;
+        }
+        .pkg-stat-icon svg { width:15px; height:15px; }
+        .pkg-stat-val { font-family:'Lora',serif; font-size:1.7rem; font-weight:400; color:var(--snow); line-height:1; }
+        .pkg-stat-lbl { font-size:0.67rem; color:var(--muted); font-weight:500; margin-top:0.25rem; letter-spacing:0.04em; }
+
+        /* ── Table ── */
+        .pkg-table-wrap {
+          background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+        }
+        .pkg-table-toolbar {
+          display:flex; align-items:center; justify-content:space-between;
+          padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+        }
+        .pkg-table-title { font-size:0.7rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); }
+
+        .pkg-table { width:100%; border-collapse:collapse; }
+        .pkg-table thead th {
+          padding:0.75rem 1.5rem; text-align:left;
+          font-size:0.62rem; letter-spacing:0.14em; text-transform:uppercase;
+          color:var(--slate); border-bottom:1px solid var(--border); font-weight:600;
+        }
+        .pkg-table tbody tr { border-bottom: 1px solid rgba(71,85,105,0.12); transition: background 0.15s; }
+        .pkg-table tbody tr:last-child { border-bottom:none; }
+        .pkg-table tbody tr:hover { background: rgba(56,189,248,0.03); }
+        .pkg-table tbody td { padding:1rem 1.5rem; font-size:0.8rem; color:var(--muted); vertical-align:middle; }
+
+        /* Package name cell */
+        .pkg-name-cell { display:flex; align-items:center; gap:0.75rem; }
+        .pkg-avatar {
+          width:36px; height:36px; border-radius:9px; flex-shrink:0;
+          display:flex; align-items:center; justify-content:center;
+          border:1px solid;
+        }
+        .pkg-avatar svg { width:15px; height:15px; }
+        .pkg-name-text { color:var(--snow); font-weight:500; font-size:0.82rem; }
+
+        /* Tier badge */
+        .tier-badge {
+          display:inline-flex; align-items:center;
+          padding:0.22rem 0.65rem; border-radius:6px; border:1px solid;
+          font-size:0.66rem; font-weight:600; letter-spacing:0.08em; text-transform:capitalize;
+        }
+
+        /* Status pill */
+        .status-pill {
+          display:inline-flex; align-items:center; gap:0.35rem;
+          padding:0.22rem 0.65rem; border-radius:20px;
+          font-size:0.66rem; font-weight:600; letter-spacing:0.06em;
+        }
+        .status-pill .dot { width:5px; height:5px; border-radius:50%; }
+        .status-pill.active   { background:rgba(52,211,153,0.1); color:#34d399; }
+        .status-pill.inactive { background:rgba(71,85,105,0.15); color:var(--slate); }
+
+        /* Price cell */
+        .price-main { color:var(--snow); font-weight:600; font-size:0.82rem; }
+        .price-sub  { color:var(--slate); font-size:0.62rem; margin-top:0.1rem; }
+
+        /* Action buttons */
+        .pkg-actions { display:flex; align-items:center; gap:0.5rem; }
+        .pkg-btn {
+          display:inline-flex; align-items:center; gap:0.35rem;
+          padding:0.38rem 0.75rem; border-radius:7px; font-size:0.7rem; font-weight:500;
+          border:1px solid var(--border); background:rgba(255,255,255,0.04);
+          color:var(--muted); cursor:pointer; transition:all 0.15s;
+          font-family:'Sora',sans-serif;
+        }
+        .pkg-btn svg { width:12px; height:12px; }
+        .pkg-btn:hover { border-color:var(--ice); color:var(--ice); background:rgba(56,189,248,0.06); }
+        .pkg-btn.danger:hover { border-color:var(--rose); color:var(--rose); background:rgba(244,63,94,0.06); }
+
+        /* Add button */
+        .pkg-add-btn {
+          display:inline-flex; align-items:center; gap:0.45rem;
+          padding:0.6rem 1.1rem; border-radius:9px;
+          background:var(--ice); color:var(--navy);
+          font-family:'Sora',sans-serif; font-size:0.78rem; font-weight:600;
+          border:none; cursor:pointer; transition:opacity 0.15s, transform 0.1s;
+        }
+        .pkg-add-btn:hover { opacity:0.9; transform:translateY(-1px); }
+        .pkg-add-btn svg { width:14px; height:14px; }
+
+        /* Loading */
+        .pkg-loading {
+          display:flex; align-items:center; justify-content:center;
+          min-height:300px; color:var(--muted); font-size:0.82rem; gap:0.75rem;
+        }
+        .spinner {
+          width:20px; height:20px; border:2px solid var(--border);
+          border-top-color:var(--ice); border-radius:50%; animation:spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        /* Empty state */
+        .pkg-empty {
+          text-align:center; padding:3.5rem 2rem;
+          color:var(--muted); font-size:0.82rem;
+        }
+        .pkg-empty-icon {
+          width:48px; height:48px; margin:0 auto 1rem;
+          background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.15);
+          border-radius:14px; display:flex; align-items:center; justify-content:center;
+        }
+        .pkg-empty-icon svg { width:22px; height:22px; stroke:var(--ice); }
+        .pkg-empty h3 { color:var(--snow); font-size:0.95rem; font-weight:500; margin:0 0 0.35rem; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+          position:fixed; inset:0; background:rgba(0,0,0,0.65);
+          display:flex; align-items:center; justify-content:center; z-index:50; padding:1rem;
+          backdrop-filter:blur(4px);
+          animation: fadein 0.15s ease;
+        }
+        @keyframes fadein { from { opacity:0; } to { opacity:1; } }
+
+        .modal-box {
+          background:var(--card); border:1px solid var(--border); border-radius:18px;
+          max-width:440px; width:100%; overflow:hidden;
+          animation: slidein 0.2s ease;
+          box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+        }
+        @keyframes slidein { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+        .modal-header {
+          display:flex; align-items:center; justify-content:space-between;
+          padding:1.35rem 1.5rem; border-bottom:1px solid var(--border);
+        }
+        .modal-title { font-family:'Lora',serif; font-size:1.1rem; font-weight:400; color:var(--snow); }
+        .modal-close {
+          background:rgba(255,255,255,0.05); border:1px solid var(--border);
+          border-radius:7px; padding:0.35rem; cursor:pointer; color:var(--muted);
+          display:flex; align-items:center; transition:all 0.15s;
+        }
+        .modal-close:hover { border-color:var(--rose); color:var(--rose); }
+        .modal-close svg { width:15px; height:15px; }
+
+        .modal-body { padding:1.5rem; display:flex; flex-direction:column; gap:1.1rem; }
+
+        .field-label {
+          display:block; font-size:0.67rem; font-weight:600;
+          letter-spacing:0.1em; text-transform:uppercase;
+          color:var(--muted); margin-bottom:0.45rem;
+        }
+        .field-input {
+          width:100%; padding:0.65rem 0.9rem;
+          background:rgba(255,255,255,0.04); border:1px solid var(--border);
+          border-radius:9px; color:var(--snow);
+          font-family:'Sora',sans-serif; font-size:0.82rem;
+          outline:none; transition:border-color 0.15s;
+        }
+        .field-input::placeholder { color:var(--slate); }
+        .field-input:focus { border-color:var(--ice); }
+        .field-input[type=number] { appearance:textfield; }
+
+        .field-row { display:grid; grid-template-columns:1fr 1fr; gap:0.9rem; }
+
+        .modal-footer {
+          display:flex; gap:0.75rem;
+          padding:1.25rem 1.5rem; border-top:1px solid var(--border);
+          background:rgba(0,0,0,0.15);
+        }
+        .modal-save {
+          flex:1; padding:0.7rem;
+          background:var(--ice); color:var(--navy);
+          font-family:'Sora',sans-serif; font-size:0.78rem; font-weight:600;
+          border:none; border-radius:9px; cursor:pointer;
+          transition:opacity 0.15s; display:flex; align-items:center; justify-content:center; gap:0.4rem;
+        }
+        .modal-save:hover { opacity:0.9; }
+        .modal-save:disabled { opacity:0.5; cursor:not-allowed; }
+        .modal-cancel {
+          flex:1; padding:0.7rem;
+          background:rgba(255,255,255,0.05); color:var(--muted);
+          border:1px solid var(--border); border-radius:9px;
+          font-family:'Sora',sans-serif; font-size:0.78rem; font-weight:500;
+          cursor:pointer; transition:all 0.15s;
+        }
+        .modal-cancel:hover { border-color:var(--slate); color:var(--snow); }
+
+        @media(max-width:900px) { .pkg-stat-grid { grid-template-columns:repeat(2,1fr); } }
+        @media(max-width:600px) { .pkg-stat-grid { grid-template-columns:1fr 1fr; } }
+      `}</style>
+
+      <div className="pkg-page">
+        {/* ── Header ── */}
+        <p
+          style={{
+            fontSize: "0.65rem",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "var(--ice)",
+            marginBottom: "0.35rem",
+          }}
+        >
+          Configuration
+        </p>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "2rem",
+          }}
+        >
+          <h1
+            style={{
+              fontFamily: "'Lora',serif",
+              fontSize: "1.9rem",
+              fontWeight: 400,
+              color: "var(--snow)",
+              margin: 0,
+            }}
+          >
+            Package Manager
+          </h1>
+          <button className="pkg-add-btn" onClick={openAdd}>
+            <PlusIcon style={{ width: 14, height: 14 }} />
+            New Package
+          </button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-          {[
-            {
-              label: "Total Packages",
-              value: packages.length,
-              icon: CubeIcon,
-            },
-            {
-              label: "Active Plans",
-              value: packages.filter((p) => p.isActive).length,
-              icon: CheckIcon,
-            },
-            {
-              label: "Avg Monthly Price",
-              value: `$${(
-                packages.reduce((sum, p) => sum + p.priceMonthly, 0) /
-                  packages.length || 0
-              ).toFixed(0)}`,
-              icon: CurrencyDollarIcon,
-            },
-            {
-              label: "Unique Tiers",
-              value: new Set(packages.map((p) => p.tier)).size,
-              icon: TagIcon,
-            },
-          ].map((stat, idx) => (
+        {/* ── Stat cards ── */}
+        <div className="pkg-stat-grid">
+          {STAT_CARDS.map((s) => (
             <div
-              key={idx}
-              className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 shadow-sm"
+              className="pkg-stat"
+              key={s.label}
+              style={{ borderColor: `rgba(71,85,105,0.25)` }}
             >
-              <div className="p-4 md:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-500 text-xs md:text-sm font-medium">
-                      {stat.label}
-                    </p>
-                    <p className="text-2xl md:text-3xl font-bold text-gray-900 mt-2">
-                      {stat.value}
-                    </p>
-                  </div>
-                  <div className="bg-gray-100 rounded-xl p-2 md:p-3">
-                    <stat.icon className="h-5 w-5 md:h-6 md:w-6 text-gray-600" />
-                  </div>
+              <div className="pkg-stat-top">
+                <div
+                  className="pkg-stat-icon"
+                  style={{
+                    background: `${s.color}18`,
+                    border: `1px solid ${s.color}30`,
+                  }}
+                >
+                  <s.icon style={{ width: 15, height: 15, stroke: s.color }} />
                 </div>
               </div>
+              <div className="pkg-stat-val">{s.value}</div>
+              <div className="pkg-stat-lbl">{s.label}</div>
             </div>
           ))}
         </div>
 
-        {/* Packages Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  {[
-                    "Package Name",
-                    "Tier",
-                    "Monthly Price",
-                    "Yearly Price",
-                    "Status",
-                    "Actions",
-                  ].map((header) => (
-                    <th
-                      key={header}
-                      className="px-4 md:px-6 py-3 md:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {packages.map((p) => (
-                  <tr
-                    key={p.id}
-                    className="hover:bg-gray-50 transition-colors duration-200"
-                  >
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center">
-                          <CubeIcon className="h-4 w-4 md:h-5 md:w-5 text-gray-500" />
-                        </div>
-                        <div className="ml-3 md:ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {p.name}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 md:px-3 py-1 inline-flex text-xs leading-5 font-medium rounded-full bg-gray-100 text-gray-700">
-                        {p.tier}
-                      </span>
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        ${p.priceMonthly}
-                      </div>
-                      <div className="text-xs text-gray-500">per month</div>
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        ${p.priceYearly}
-                      </div>
-                      <div className="text-xs text-gray-500">per year</div>
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 md:px-3 py-1 inline-flex text-xs leading-5 font-medium rounded-full ${
-                          p.isActive
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {p.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2 md:gap-3">
-                        <button
-                          onClick={() => openEdit(p)}
-                          className="text-gray-500 hover:text-gray-700 transition-colors duration-200 inline-flex items-center gap-1"
-                        >
-                          <PencilIcon className="h-3 w-3 md:h-4 md:w-4" />
-                          <span className="text-xs md:text-sm">Edit</span>
-                        </button>
-                        <button
-                          onClick={() => remove(p.id)}
-                          className="text-gray-500 hover:text-red-600 transition-colors duration-200 inline-flex items-center gap-1"
-                        >
-                          <TrashIcon className="h-3 w-3 md:h-4 md:w-4" />
-                          <span className="text-xs md:text-sm">Delete</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* ── Table ── */}
+        <div className="pkg-table-wrap">
+          <div className="pkg-table-toolbar">
+            <span className="pkg-table-title">All Packages</span>
+            <span style={{ fontSize: "0.7rem", color: "var(--slate)" }}>
+              {packages.length} plan{packages.length !== 1 ? "s" : ""}
+            </span>
           </div>
-        </div>
 
-        {/* Empty State */}
-        {packages.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-            <div className="inline-flex p-4 bg-gray-100 rounded-full mb-4">
-              <CubeIcon className="h-12 w-12 text-gray-400" />
+          {loading ? (
+            <div className="pkg-loading">
+              <div className="spinner" />
+              Loading packages…
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No packages yet
-            </h3>
-            <p className="text-gray-500">
-              Get started by creating your first package
-            </p>
-          </div>
-        )}
+          ) : packages.length === 0 ? (
+            <div className="pkg-empty">
+              <div className="pkg-empty-icon">
+                <CubeIcon />
+              </div>
+              <h3>No packages yet</h3>
+              <p>Create your first subscription plan to get started.</p>
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table className="pkg-table">
+                <thead>
+                  <tr>
+                    <th>Package</th>
+                    <th>Tier</th>
+                    <th>Monthly</th>
+                    <th>Yearly</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {packages.map((p) => {
+                    const t = getTierStyle(p.tier);
+                    return (
+                      <tr key={p.id}>
+                        {/* Name */}
+                        <td>
+                          <div className="pkg-name-cell">
+                            <div
+                              className="pkg-avatar"
+                              style={{
+                                background: t.bg,
+                                borderColor: t.border,
+                              }}
+                            >
+                              <SparklesIcon
+                                style={{
+                                  width: 15,
+                                  height: 15,
+                                  stroke: t.text,
+                                }}
+                              />
+                            </div>
+                            <span className="pkg-name-text">{p.name}</span>
+                          </div>
+                        </td>
+
+                        {/* Tier */}
+                        <td>
+                          <span
+                            className="tier-badge"
+                            style={{
+                              background: t.bg,
+                              color: t.text,
+                              borderColor: t.border,
+                            }}
+                          >
+                            {p.tier || "—"}
+                          </span>
+                        </td>
+
+                        {/* Monthly price */}
+                        <td>
+                          <div className="price-main">${p.priceMonthly}</div>
+                          <div className="price-sub">/ month</div>
+                        </td>
+
+                        {/* Yearly price */}
+                        <td>
+                          <div className="price-main">${p.priceYearly}</div>
+                          <div className="price-sub">/ year</div>
+                        </td>
+
+                        {/* Status */}
+                        <td>
+                          <span
+                            className={`status-pill ${
+                              p.isActive ? "active" : "inactive"
+                            }`}
+                          >
+                            <span
+                              className="dot"
+                              style={{
+                                background: p.isActive
+                                  ? "#34d399"
+                                  : "var(--slate)",
+                              }}
+                            />
+                            {p.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+
+                        {/* Actions */}
+                        <td>
+                          <div className="pkg-actions">
+                            <button
+                              className="pkg-btn"
+                              onClick={() => openEdit(p)}
+                            >
+                              <PencilIcon style={{ width: 12, height: 12 }} />
+                              Edit
+                            </button>
+                            <button
+                              className="pkg-btn danger"
+                              onClick={() => remove(p.id)}
+                            >
+                              <TrashIcon style={{ width: 12, height: 12 }} />
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Modal Overlay */}
+      {/* ── Modal ── */}
       {modal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="flex justify-between items-center p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">
-                {modal === "edit" ? "Edit Package" : "Create Package"}
-              </h2>
-              <button
-                onClick={() => setModal(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <XMarkIcon className="h-6 w-6" />
+        <div
+          className="modal-overlay"
+          onClick={(e) => e.target === e.currentTarget && setModal(null)}
+        >
+          <div className="modal-box">
+            <div className="modal-header">
+              <span className="modal-title">
+                {modal === "edit" ? "Edit Package" : "New Package"}
+              </span>
+              <button className="modal-close" onClick={() => setModal(null)}>
+                <XMarkIcon style={{ width: 15, height: 15 }} />
               </button>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="modal-body">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Package Name
-                </label>
+                <label className="field-label">Package Name</label>
                 <input
-                  placeholder="e.g., Pro Plan"
+                  className="field-input"
+                  placeholder="e.g., Explorer Plan"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tier
-                </label>
+                <label className="field-label">Tier</label>
                 <input
-                  placeholder="e.g., premium"
+                  className="field-input"
+                  placeholder="explorer · summit · apex"
                   value={form.tier}
                   onChange={(e) => setForm({ ...form, tier: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Monthly Price ($)
-                </label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={form.priceMonthly}
-                  onChange={(e) =>
-                    setForm({ ...form, priceMonthly: Number(e.target.value) })
-                  }
-                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Yearly Price ($)
-                </label>
-                <input
-                  type="number"
-                  placeholder="0"
-                  value={form.priceYearly}
-                  onChange={(e) =>
-                    setForm({ ...form, priceYearly: Number(e.target.value) })
-                  }
-                  className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all text-gray-900 placeholder-gray-400"
-                />
+              <div className="field-row">
+                <div>
+                  <label className="field-label">Monthly Price ($)</label>
+                  <input
+                    type="number"
+                    className="field-input"
+                    placeholder="0"
+                    value={form.priceMonthly}
+                    onChange={(e) =>
+                      setForm({ ...form, priceMonthly: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="field-label">Yearly Price ($)</label>
+                  <input
+                    type="number"
+                    className="field-input"
+                    placeholder="0"
+                    value={form.priceYearly}
+                    onChange={(e) =>
+                      setForm({ ...form, priceYearly: Number(e.target.value) })
+                    }
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-              <button
-                onClick={save}
-                className="flex-1 px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg transition-all duration-200"
-              >
-                Save Changes
+            <div className="modal-footer">
+              <button className="modal-save" onClick={save} disabled={saving}>
+                {saving ? "Saving…" : "Save Package"}
               </button>
-              <button
-                onClick={() => setModal(null)}
-                className="flex-1 px-4 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-all duration-200"
-              >
+              <button className="modal-cancel" onClick={() => setModal(null)}>
                 Cancel
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

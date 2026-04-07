@@ -8,6 +8,10 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle,
+  FileText,
+  Trophy,
+  Target,
+  Hash,
 } from "lucide-react";
 
 export default function EditLessonPage() {
@@ -65,7 +69,6 @@ export default function EditLessonPage() {
     >
   ) => {
     setLesson({ ...lesson, [e.target.name]: e.target.value });
-    // Clear success message when user starts editing
     if (success) setSuccess(null);
   };
 
@@ -89,7 +92,6 @@ export default function EditLessonPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     setSaving(true);
@@ -99,9 +101,7 @@ export default function EditLessonPage() {
     try {
       const res = await fetch(`/api/lessons/${lessonId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(lesson),
       });
 
@@ -127,49 +127,207 @@ export default function EditLessonPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-gray-600">Loading lesson...</p>
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-2 border-ice/20"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-ice border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-muted">Loading lesson...</p>
         </div>
       </div>
     );
   }
 
+  const levelOptions = {
+    Beginner: { label: "Beginner", icon: Target, color: "#34d399" },
+    Intermediate: { label: "Intermediate", icon: Trophy, color: "#f59e0b" },
+    Advanced: { label: "Advanced", icon: Hash, color: "#f43f5e" },
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="admin-page">
+      <style jsx>{`
+        .admin-page {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+          padding: 2rem 0;
+        }
+
+        .form-card {
+          background: rgba(15, 23, 42, 0.6);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(56, 189, 248, 0.1);
+          border-radius: 20px;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+
+        .form-card:hover {
+          border-color: rgba(56, 189, 248, 0.2);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-input {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          background: rgba(2, 6, 23, 0.6);
+          border: 1px solid rgba(71, 85, 105, 0.5);
+          border-radius: 12px;
+          color: #f8fafc;
+          font-size: 0.875rem;
+          transition: all 0.2s ease;
+          outline: none;
+        }
+
+        .form-input:focus {
+          border-color: #38bdf8;
+          box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+          background: rgba(2, 6, 23, 0.8);
+        }
+
+        .form-input.error {
+          border-color: #f43f5e;
+          background: rgba(244, 63, 94, 0.05);
+        }
+
+        .form-label {
+          display: block;
+          font-size: 0.75rem;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #94a3b8;
+          margin-bottom: 0.5rem;
+        }
+
+        .form-label span {
+          color: #f43f5e;
+        }
+
+        .btn-primary {
+          background: linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%);
+          border: none;
+          border-radius: 12px;
+          padding: 0.75rem 1.5rem;
+          color: white;
+          font-weight: 600;
+          font-size: 0.875rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(56, 189, 248, 0.3);
+        }
+
+        .btn-primary:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .btn-secondary {
+          background: rgba(71, 85, 105, 0.2);
+          border: 1px solid rgba(71, 85, 105, 0.5);
+          border-radius: 12px;
+          padding: 0.75rem 1.5rem;
+          color: #cbd5e1;
+          font-weight: 600;
+          font-size: 0.875rem;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+          background: rgba(71, 85, 105, 0.3);
+          border-color: rgba(56, 189, 248, 0.3);
+          color: #f8fafc;
+        }
+
+        .error-alert {
+          background: rgba(244, 63, 94, 0.1);
+          border: 1px solid rgba(244, 63, 94, 0.3);
+          border-radius: 12px;
+          padding: 1rem;
+          display: flex;
+          gap: 0.75rem;
+          align-items: flex-start;
+        }
+
+        .success-alert {
+          background: rgba(52, 211, 153, 0.1);
+          border: 1px solid rgba(52, 211, 153, 0.3);
+          border-radius: 12px;
+          padding: 1rem;
+          display: flex;
+          gap: 0.75rem;
+          align-items: flex-start;
+        }
+
+        .level-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 0.75rem;
+          border-radius: 8px;
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+
+        select.form-input {
+          cursor: pointer;
+        }
+
+        textarea.form-input {
+          resize: vertical;
+          font-family: inherit;
+        }
+      `}</style>
+
       <div className="max-w-3xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+            className="group flex items-center gap-2 text-muted hover:text-ice transition-all duration-200 mb-4"
           >
-            <ArrowLeft className="w-5 h-5" />
-            Back
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+            <span className="text-sm font-medium">Back</span>
           </button>
 
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Edit Lesson</h1>
-            <p className="text-gray-600 mt-1">
-              Update lesson details and content
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-6 h-6 text-ice" />
+              <span className="text-xs font-semibold text-ice tracking-wider uppercase">
+                Edit Lesson
+              </span>
+            </div>
+            <h1 className="text-3xl font-bold text-snow font-lora mb-2">
+              {lesson.title || "Untitled Lesson"}
+            </h1>
+            <p className="text-muted text-sm">
+              Update lesson details, content, and difficulty level
             </p>
           </div>
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="form-card">
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* Error Alert */}
             {error && (
-              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-red-800">Error</p>
-                  <p className="text-sm text-red-700">{error}</p>
+              <div className="error-alert">
+                <AlertCircle className="w-5 h-5 text-rose flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-rose mb-1">Error</p>
+                  <p className="text-sm text-rose/90">{error}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setError(null)}
-                  className="ml-auto text-red-500 hover:text-red-700"
+                  className="text-rose/70 hover:text-rose transition-colors text-xl leading-none"
                 >
                   ×
                 </button>
@@ -178,19 +336,21 @@ export default function EditLessonPage() {
 
             {/* Success Alert */}
             {success && (
-              <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-green-800">Success</p>
-                  <p className="text-sm text-green-700">{success}</p>
+              <div className="success-alert animate-in fade-in duration-300">
+                <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-emerald-400 mb-1">
+                    Success
+                  </p>
+                  <p className="text-sm text-emerald-400/90">{success}</p>
                 </div>
               </div>
             )}
 
             {/* Title Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Title <span className="text-red-500">*</span>
+              <label className="form-label">
+                Title <span>*</span>
               </label>
               <input
                 name="title"
@@ -199,21 +359,19 @@ export default function EditLessonPage() {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 placeholder="Enter lesson title"
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all ${
-                  touched.title && !lesson.title.trim()
-                    ? "border-red-500 bg-red-50"
-                    : "border-gray-300"
+                className={`form-input ${
+                  touched.title && !lesson.title.trim() ? "error" : ""
                 }`}
               />
               {touched.title && !lesson.title.trim() && (
-                <p className="text-sm text-red-500 mt-1">Title is required</p>
+                <p className="text-xs text-rose mt-1.5">Title is required</p>
               )}
             </div>
 
             {/* Sport Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sport <span className="text-red-500">*</span>
+              <label className="form-label">
+                Sport <span>*</span>
               </label>
               <input
                 name="sport"
@@ -222,71 +380,111 @@ export default function EditLessonPage() {
                 onChange={handleChange}
                 onBlur={handleBlur}
                 placeholder="Enter sport name (e.g., Soccer, Basketball)"
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all ${
-                  touched.sport && !lesson.sport.trim()
-                    ? "border-red-500 bg-red-50"
-                    : "border-gray-300"
+                className={`form-input ${
+                  touched.sport && !lesson.sport.trim() ? "error" : ""
                 }`}
               />
               {touched.sport && !lesson.sport.trim() && (
-                <p className="text-sm text-red-500 mt-1">Sport is required</p>
+                <p className="text-xs text-rose mt-1.5">Sport is required</p>
               )}
             </div>
 
             {/* Description Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
+              <label className="form-label">Description</label>
               <textarea
                 name="description"
                 value={lesson.description}
                 onChange={handleChange}
-                rows={5}
+                rows={6}
                 placeholder="Enter lesson description..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all resize-y"
+                className="form-input"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted mt-1.5">
                 Provide a detailed description of what students will learn
               </p>
             </div>
 
             {/* Level Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Difficulty Level
-              </label>
+              <label className="form-label">Difficulty Level</label>
               <select
                 name="level"
                 value={lesson.level}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-white"
+                className="form-input"
               >
                 <option value="Beginner">
-                  Beginner - No experience needed
+                  🟢 Beginner - No experience needed
                 </option>
                 <option value="Intermediate">
-                  Intermediate - Some experience required
+                  🟡 Intermediate - Some experience required
                 </option>
-                <option value="Advanced">Advanced - Experienced players</option>
+                <option value="Advanced">
+                  🔴 Advanced - Experienced players
+                </option>
               </select>
+
+              {/* Level preview */}
+              <div className="mt-3">
+                <div
+                  className="level-badge"
+                  style={{
+                    background:
+                      lesson.level === "Beginner"
+                        ? "rgba(52, 211, 153, 0.1)"
+                        : lesson.level === "Intermediate"
+                        ? "rgba(245, 158, 11, 0.1)"
+                        : "rgba(244, 63, 94, 0.1)",
+                    border: `1px solid ${
+                      lesson.level === "Beginner"
+                        ? "rgba(52, 211, 153, 0.3)"
+                        : lesson.level === "Intermediate"
+                        ? "rgba(245, 158, 11, 0.3)"
+                        : "rgba(244, 63, 94, 0.3)"
+                    }`,
+                  }}
+                >
+                  {lesson.level === "Beginner" && (
+                    <Target className="w-3 h-3" style={{ color: "#34d399" }} />
+                  )}
+                  {lesson.level === "Intermediate" && (
+                    <Trophy className="w-3 h-3" style={{ color: "#f59e0b" }} />
+                  )}
+                  {lesson.level === "Advanced" && (
+                    <Hash className="w-3 h-3" style={{ color: "#f43f5e" }} />
+                  )}
+                  <span
+                    style={{
+                      color:
+                        lesson.level === "Beginner"
+                          ? "#34d399"
+                          : lesson.level === "Intermediate"
+                          ? "#f59e0b"
+                          : "#f43f5e",
+                    }}
+                  >
+                    {lesson.level}
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Form Actions */}
-            <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <div className="flex gap-3 pt-4 border-t border-ice/10">
               <button
                 type="submit"
                 disabled={saving}
-                className="flex-1 sm:flex-none bg-primary hover:bg-primary-dark text-white font-medium px-6 py-2.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="btn-primary flex-1 sm:flex-none justify-center"
               >
                 {saving ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save className="w-5 h-5" />
+                    <Save className="w-4 h-4" />
                     Update Lesson
                   </>
                 )}
@@ -295,7 +493,7 @@ export default function EditLessonPage() {
               <button
                 type="button"
                 onClick={() => router.push("/admin/content")}
-                className="flex-1 sm:flex-none px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="btn-secondary flex-1 sm:flex-none"
               >
                 Cancel
               </button>
@@ -305,7 +503,7 @@ export default function EditLessonPage() {
 
         {/* Help Text */}
         <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted">
             All changes will be immediately visible to students
           </p>
         </div>
