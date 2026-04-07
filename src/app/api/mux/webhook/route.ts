@@ -1,27 +1,47 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateSubtitles } from "@/lib/subtitles";
+import Mux from "@mux/mux-node";
+
+const mux = new Mux({
+  tokenId: process.env.MUX_TOKEN_ID!,
+  tokenSecret: process.env.MUX_TOKEN_SECRET!,
+});
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    // ── Verify webhook signature ──────────────────────────────────────────────
+    const rawBody = await req.text(); // Must read as text FIRST for signature check
+    const muxSignature = req.headers.get("mux-signature");
+
+    if (!muxSignature || !process.env.MUX_WEBHOOK_SECRET) {
+      console.error("❌ Missing webhook signature or secret");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+      mux.webhooks.verifySignature(
+        rawBody,
+        req.headers as any,
+        process.env.MUX_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.error("❌ Invalid webhook signature:", err);
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    }
+
+    const body = JSON.parse(rawBody); // Parse AFTER verification
     console.log("🎬 MUX EVENT:", body.type);
 
     const asset = body.data;
     const playbackId = asset.playback_ids?.[0]?.id;
     const uploadId = asset.upload_id;
 
-    // ── Handle video.asset.ready — update lesson metadata only ──────────────
+    // ── video.asset.ready ─────────────────────────────────────────────────────
     if (body.type === "video.asset.ready") {
-      console.log("📦 Asset ID:", asset.id);
-      console.log("🔗 Upload ID:", uploadId);
-      console.log("▶️ Playback ID:", playbackId);
-
       if (!uploadId || !playbackId) {
-        console.log("❌ Missing uploadId or playbackId");
         return NextResponse.json({ received: true });
       }
-
       try {
         await prisma.lesson.update({
           where: { uploadId },
@@ -34,42 +54,19 @@ export async function POST(req: Request) {
         });
         console.log("✅ LESSON UPDATED with video metadata");
       } catch (e: any) {
-        if (e.code === "P2025") {
-          console.log(
-            "⚠️ No lesson found for uploadId:",
-            uploadId,
-            "— skipping"
-          );
-        } else {
-          throw e;
-        }
+        if (e.code !== "P2025") throw e;
+        console.log("⚠️ No lesson found for uploadId:", uploadId);
       }
-
       return NextResponse.json({ received: true });
     }
 
-    // ── Handle video.asset.static_renditions.ready — NOW download + subtitle ─
+    // ── video.asset.static_renditions.ready ───────────────────────────────────
     if (body.type === "video.asset.static_renditions.ready") {
-      console.log("🎞️ Static renditions ready, starting subtitles...");
-      console.log("📦 Asset ID:", asset.id);
-
-      // Find lesson by assetId since this event has no upload_id
       const lesson = await prisma.lesson.findFirst({
         where: { assetId: asset.id },
       });
 
-      if (!lesson) {
-        console.log("⚠️ No lesson found for assetId:", asset.id);
-        return NextResponse.json({ received: true });
-      }
-
-      if (!lesson.playbackId) {
-        console.log("⚠️ Lesson has no playbackId yet");
-        return NextResponse.json({ received: true });
-      }
-
-      if (lesson.subtitlesStatus === "done") {
-        console.log("⏭️ Subtitles already generated, skipping");
+      if (!lesson?.playbackId || lesson.subtitlesStatus === "done") {
         return NextResponse.json({ received: true });
       }
 
@@ -83,7 +80,6 @@ export async function POST(req: Request) {
               subtitlesStatus: "done",
             },
           });
-          console.log(`✅ SUBTITLES SAVED for lesson ${lesson.id}`);
         })
         .catch(async (err) => {
           console.error(`❌ SUBTITLE FAILED for lesson ${lesson.id}:`, err);
@@ -96,7 +92,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true });
     }
 
-    // All other events — ignore
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("❌ WEBHOOK ERROR:", error);
