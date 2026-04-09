@@ -54,7 +54,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               onClick={logout}
               className="flex md:hidden items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-red-400 hover:text-red-300 hover:bg-white/[0.06] transition-colors text-sm font-medium"
             >
-              <LogOut className="w-4 h-4" />
               Sign Out
             </motion.button>
 
