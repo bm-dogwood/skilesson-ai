@@ -53,11 +53,12 @@ export default function LessonDetailPage() {
   const [notesSaved, setNotesSaved] = useState(false);
   const [watchedPct, setWatchedPct] = useState(0);
   const [upNext, setUpNext] = useState<any[]>([]);
+  const { lang } = useTranslation();
 
   // Fetch lesson
   useEffect(() => {
     if (!lessonId) return;
-    fetch(`/api/lessons/${lessonId}`)
+    fetch(`/api/lessons/${lessonId}?lang=${lang}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.success) {

@@ -451,7 +451,7 @@ export default function ProgressPage() {
                       {level.level}
                     </span>
                     <span className="text-xs text-slate-400">
-                      {level.completed}/{level.total} {t("progress.lessons")}
+                      {level.completed}/{level.total} {t("progress")}
                     </span>
                   </div>
                   <div className="w-full h-2 bg-white/[0.06] rounded-full overflow-hidden">

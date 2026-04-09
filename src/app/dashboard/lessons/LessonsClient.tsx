@@ -75,7 +75,7 @@ export default function LessonsClient() {
     useState<CompletionFilter>("All");
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-
+  const { lang } = useTranslation();
   const getProgressPercent = (lesson: Lesson) => {
     const p = lesson.progress?.[0];
     if (!p || !lesson.duration) return 0;
@@ -89,7 +89,7 @@ export default function LessonsClient() {
     lesson.progress?.[0]?.status || "NOT_STARTED";
 
   useEffect(() => {
-    fetch("/api/lessons-user")
+    fetch(`/api/lessons-user?lang=${lang}`)
       .then((r) => r.json())
       .then((data) => {
         setLessons(data.lessons || []);

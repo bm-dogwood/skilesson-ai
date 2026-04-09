@@ -1,9 +1,12 @@
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sendNewLessonEmail } from "@/lib/email";
 
 // ✅ GET ALL LESSONS
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // 👈 add req param
+  const lang = req.nextUrl.searchParams.get("lang") || "en"; // 👈 read lang
+
   const lessons = await prisma.lesson.findMany({
     include: {
       user: true,
@@ -12,7 +15,15 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json({ success: true, lessons });
+  // 👇 Localize title + description based on lang
+  const localized = lessons.map((l) => ({
+    ...l,
+    title: lang === "es" && l.titleEs ? l.titleEs : l.title,
+    description:
+      lang === "es" && l.descriptionEs ? l.descriptionEs : l.description,
+  }));
+
+  return NextResponse.json({ success: true, lessons: localized });
 }
 
 // ✅ CREATE LESSON

@@ -50,6 +50,9 @@ model Lesson {
   subtitlesEsUrl  String?   // ES .vtt URL
   subtitlesStatus String?   @default("pending") // pending | processing | done | failed
 
+  titleEs       String?   // Spanish title
+  descriptionEs String?   // Spanish description
+
   duration    Int?
     createdAt   DateTime @default(now())   // ✅ ADD THIS
   updatedAt   DateTime @updatedAt 

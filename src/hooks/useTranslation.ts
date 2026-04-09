@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import en from "@/lib/locales/en.json";
 import es from "@/lib/locales/es.json";
 
@@ -21,14 +21,14 @@ if (typeof window !== "undefined") {
 export function useTranslation() {
   const [lang, setLangState] = useState<Language>(_lang);
 
-  // Subscribe to external language changes
-  useState(() => {
+  // Subscribe to external language changes after mount, unsubscribe on unmount
+  useEffect(() => {
     const listener = () => setLangState(_lang);
     _listeners.push(listener);
     return () => {
       _listeners = _listeners.filter((l) => l !== listener);
     };
-  });
+  }, []);
 
   const setLang = useCallback((newLang: Language) => {
     _lang = newLang;

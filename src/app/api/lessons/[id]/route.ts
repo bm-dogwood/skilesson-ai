@@ -9,14 +9,13 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const lang = req.nextUrl.searchParams.get("lang") || "en"; // 👈 ADD THIS
     const session = await getServerSession();
 
-    // 🔐 Auth check
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 👤 Get user
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
     });
@@ -25,15 +24,10 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // 📚 Get lesson + progress
     const lesson = await prisma.lesson.findUnique({
       where: { id },
       include: {
-        progress: {
-          where: {
-            userId: user.id,
-          },
-        },
+        progress: { where: { userId: user.id } },
       },
     });
 
@@ -44,13 +38,10 @@ export async function GET(
       );
     }
 
-    // 🎯 Extract progress safely
     const progress = lesson.progress?.[0] || null;
+
     const upNext = await prisma.lesson.findMany({
-      where: {
-        id: { not: id },
-        sport: lesson.sport,
-      },
+      where: { id: { not: id }, sport: lesson.sport },
       take: 4,
       orderBy: { createdAt: "desc" },
       select: {
@@ -58,20 +49,34 @@ export async function GET(
         title: true,
         duration: true,
         thumbnailUrl: true,
+        titleEs: true,
       },
     });
 
-    // 🚀 Clean response for frontend
+    // 👇 Localize the main lesson
+    const localizedLesson = {
+      ...lesson,
+      title: lang === "es" && lesson.titleEs ? lesson.titleEs : lesson.title,
+      description:
+        lang === "es" && lesson.descriptionEs
+          ? lesson.descriptionEs
+          : lesson.description,
+      progress,
+      completed: progress?.status === "COMPLETED",
+      status: progress?.status || "IN_PROGRESS",
+      timestamp: progress?.timestamp || 0,
+    };
+
+    // 👇 Localize upNext titles too
+    const localizedUpNext = upNext.map((l) => ({
+      ...l,
+      title: lang === "es" && l.titleEs ? l.titleEs : l.title,
+    }));
+
     return NextResponse.json({
       success: true,
-      lesson: {
-        ...lesson,
-        progress, // full progress object (optional use)
-        completed: progress?.status === "COMPLETED",
-        status: progress?.status || "IN_PROGRESS",
-        timestamp: progress?.timestamp || 0,
-      },
-      upNext,
+      lesson: localizedLesson,
+      upNext: localizedUpNext,
     });
   } catch (err) {
     console.error("GET LESSON ERROR:", err);

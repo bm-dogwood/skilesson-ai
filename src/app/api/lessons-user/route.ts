@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getServerSession();
-
+  const lang = req.nextUrl.searchParams.get("lang") || "en";
   if (!session?.user?.email) {
     return NextResponse.json({
       lessons: [],
@@ -35,9 +35,15 @@ export async function GET() {
     },
     orderBy: { createdAt: "desc" },
   });
+  const localized = lessons.map((l) => ({
+    ...l,
+    title: lang === "es" && l.titleEs ? l.titleEs : l.title,
+    description:
+      lang === "es" && l.descriptionEs ? l.descriptionEs : l.description,
+  }));
 
   return NextResponse.json({
-    lessons,
+    lessons: localized,
     hasSubscription: true,
   });
 }

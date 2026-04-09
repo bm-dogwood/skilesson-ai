@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import Mux from "@mux/mux-node";
+import { translateToSpanish } from "@/lib/translate";
 
 const mux = new Mux({
   tokenId: process.env.MUX_TOKEN_ID!,
@@ -52,7 +53,23 @@ export async function POST(req: Request) {
         subtitlesStatus: "pending",
       },
     });
+    try {
+      const translated = await translateToSpanish({
+        title: title,
+        description: description || "",
+      });
 
+      await prisma.lesson.update({
+        where: { id: lesson.id },
+        data: {
+          titleEs: translated.title,
+          descriptionEs: translated.description,
+        },
+      });
+    } catch (err) {
+      console.error("Translation failed:", err);
+      // Non-blocking — lesson still saves fine without it
+    }
     console.log("✅ LESSON CREATED:", lesson.id);
     console.log("🔗 MUX UPLOAD ID:", upload.id);
 
